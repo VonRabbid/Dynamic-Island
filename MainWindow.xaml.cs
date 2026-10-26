@@ -21,6 +21,7 @@ public partial class MainWindow : Window, IDisposable
     private readonly MainViewModel _viewModel;
     private readonly FullscreenDetector _fullscreenDetector;
     private DispatcherTimer? _volumeFadeTimer;
+    private DispatcherTimer? _collapseTimer;
     private FrameworkElement? _currentTargetView;
 
     public MainWindow()
@@ -151,6 +152,8 @@ public partial class MainWindow : Window, IDisposable
 
     public void Dispose()
     {
+        _collapseTimer?.Stop();
+        _volumeFadeTimer?.Stop();
         _fullscreenDetector.Dispose();
         GC.SuppressFinalize(this);
     }
@@ -385,31 +388,52 @@ public partial class MainWindow : Window, IDisposable
 
     private void IslandBorder_MouseEnter(object sender, MouseEventArgs e)
     {
-        var pos = e.GetPosition(IslandBorder);
-        if (pos.X < 0 || pos.X > IslandBorder.ActualWidth ||
-            pos.Y < 0 || pos.Y > IslandBorder.ActualHeight)
-        {
-            return;
-        }
+        _collapseTimer?.Stop();
 
-        _viewModel.SetHoveredCommand.Execute(true);
+        var pos = Mouse.GetPosition(IslandBorder);
+        var bounds = new Rect(0, 0, IslandBorder.ActualWidth, IslandBorder.ActualHeight);
+        if (bounds.Contains(pos))
+        {
+            _viewModel.IsHovered = true;
+        }
+    }
+
+    private void IslandBorder_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_collapseTimer != null && _collapseTimer.IsEnabled)
+        {
+            var pos = Mouse.GetPosition(IslandBorder);
+            var bounds = new Rect(0, 0, IslandBorder.ActualWidth, IslandBorder.ActualHeight);
+            if (bounds.Contains(pos))
+            {
+                _collapseTimer.Stop();
+                if (!_viewModel.IsHovered)
+                {
+                    _viewModel.IsHovered = true;
+                }
+            }
+        }
     }
 
     private void IslandBorder_MouseLeave(object sender, MouseEventArgs e)
     {
-        if (IslandBorder.IsMouseOver)
+        _collapseTimer?.Stop();
+        _collapseTimer = new DispatcherTimer
         {
-            return;
-        }
-
-        var pos = e.GetPosition(IslandBorder);
-        if (pos.X >= 0 && pos.X <= IslandBorder.ActualWidth &&
-            pos.Y >= 0 && pos.Y <= IslandBorder.ActualHeight)
+            Interval = TimeSpan.FromMilliseconds(250)
+        };
+        _collapseTimer.Tick += (s, args) =>
         {
-            return;
-        }
+            _collapseTimer.Stop();
 
-        _viewModel.SetHoveredCommand.Execute(false);
+            var pos = Mouse.GetPosition(IslandBorder);
+            var bounds = new Rect(0, 0, IslandBorder.ActualWidth, IslandBorder.ActualHeight);
+            if (!bounds.Contains(pos))
+            {
+                _viewModel.IsHovered = false;
+            }
+        };
+        _collapseTimer.Start();
     }
 
     private void IslandBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

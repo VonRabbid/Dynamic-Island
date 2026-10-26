@@ -93,6 +93,7 @@
                 Cursor="Hand"
                 MouseEnter="IslandBorder_MouseEnter"
                 MouseLeave="IslandBorder_MouseLeave"
+                MouseMove="IslandBorder_MouseMove"
                 MouseLeftButtonDown="IslandBorder_MouseLeftButtonDown"
                 PreviewMouseWheel="IslandBorder_PreviewMouseWheel">
 

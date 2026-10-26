@@ -49,9 +49,6 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _isHovered;
 
-    [ObservableProperty]
-    private bool _isPinned;
-
     public MediaService Media { get; }
     public NotificationService Notifications { get; }
 
@@ -177,8 +174,6 @@ public partial class MainViewModel : ObservableObject
 
     partial void OnIsHoveredChanged(bool value) => UpdateState();
 
-    partial void OnIsPinnedChanged(bool value) => UpdateState();
-
     public void UpdateState()
     {
         // Regla de prioridad: Notificación externa > PowerAlert > CapsLockAlert > Expanded > MusicPlaying > Idle
@@ -194,7 +189,7 @@ public partial class MainViewModel : ObservableObject
         {
             CurrentState = IslandState.CapsLockAlert;
         }
-        else if ((IsHovered || IsPinned) && Media.HasMedia)
+        else if (IsHovered && Media.HasMedia)
         {
             CurrentState = IslandState.Expanded;
         }
@@ -230,11 +225,6 @@ public partial class MainViewModel : ObservableObject
             IsCapsLockAlertActive = false;
             UpdateState();
             return;
-        }
-
-        if (Media.HasMedia)
-        {
-            IsPinned = !IsPinned;
         }
     }
 
