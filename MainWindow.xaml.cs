@@ -4,8 +4,11 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using DynamicIsland.Helpers;
+using DynamicIsland.Models;
 using DynamicIsland.Services;
 using DynamicIsland.ViewModels;
 using Rectangle = System.Windows.Shapes.Rectangle;
@@ -17,6 +20,7 @@ public partial class MainWindow : Window
 {
     private readonly MainViewModel _viewModel;
     private readonly FullscreenDetector _fullscreenDetector;
+    private DispatcherTimer? _volumeFadeTimer;
 
     public MainWindow()
     {
@@ -31,6 +35,8 @@ public partial class MainWindow : Window
         _viewModel.PropertyChanged += OnViewModelPropertyChanged;
         _viewModel.Media.PropertyChanged += OnMediaPropertyChanged;
         _viewModel.NotificationPulsed += (s, e) => Dispatcher.InvokeAsync(PlayNotificationPulse);
+
+        SettingsService.Instance.SettingsChanged += OnSettingsChanged;
 
         Loaded += OnLoaded;
         Microsoft.Win32.SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
@@ -48,6 +54,7 @@ public partial class MainWindow : Window
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         CenterOnWorkArea();
+        ApplyScale(SettingsService.Instance.CurrentSettings.IslandScale);
         ApplyState(_viewModel.CurrentState, animate: false);
         UpdateEqualizerAnimation(_viewModel.Media.IsPlaying);
     }
@@ -55,6 +62,21 @@ public partial class MainWindow : Window
     private void OnDisplaySettingsChanged(object? sender, EventArgs e)
     {
         Dispatcher.InvokeAsync(CenterOnWorkArea);
+    }
+
+    private void OnSettingsChanged(AppSettings settings)
+    {
+        Dispatcher.InvokeAsync(() =>
+        {
+            CenterOnWorkArea();
+            ApplyScale(settings.IslandScale);
+        });
+    }
+
+    private void ApplyScale(double scale)
+    {
+        if (scale < 0.5) scale = 1.0;
+        IslandBorder.LayoutTransform = new ScaleTransform(scale, scale);
     }
 
     public void ResetPosition()
@@ -69,7 +91,7 @@ public partial class MainWindow : Window
     {
         var workArea = SystemParameters.WorkArea;
         Left = workArea.Left + (workArea.Width - Width) / 2;
-        Top = workArea.Top + 6;
+        Top = workArea.Top + 6 + SettingsService.Instance.CurrentSettings.VerticalOffset;
     }
 
     private void OnFullscreenChanged(object? sender, bool isFullscreen)
@@ -157,7 +179,7 @@ public partial class MainWindow : Window
 
             case IslandState.Expanded:
                 targetWidth = 360;
-                targetHeight = 140;
+                targetHeight = 148;
                 targetRadius = 26;
                 targetView = ExpandedView;
                 viewsToHide.Add(IdleView);
@@ -288,6 +310,46 @@ public partial class MainWindow : Window
     private void IslandBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         _viewModel.ToggleExpandCommand.Execute(null);
+    }
+
+    private void IslandBorder_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (!SettingsService.Instance.CurrentSettings.EnableMouseWheelVolume)
+            return;
+
+        e.Handled = true;
+        bool isUp = e.Delta > 0;
+        if (isUp)
+        {
+            VolumeHelper.VolumeUp();
+        }
+        else
+        {
+            VolumeHelper.VolumeDown();
+        }
+
+        ShowVolumeFeedback(isUp);
+    }
+
+    private void ShowVolumeFeedback(bool isUp)
+    {
+        VolumeText.Text = isUp ? "Volumen +" : "Volumen −";
+
+        var fadeIn = new DoubleAnimation(1, TimeSpan.FromMilliseconds(100));
+        VolumeFeedbackOverlay.BeginAnimation(OpacityProperty, fadeIn);
+
+        _volumeFadeTimer?.Stop();
+        _volumeFadeTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(1000)
+        };
+        _volumeFadeTimer.Tick += (s, e) =>
+        {
+            _volumeFadeTimer?.Stop();
+            var fadeOut = new DoubleAnimation(0, TimeSpan.FromMilliseconds(300));
+            VolumeFeedbackOverlay.BeginAnimation(OpacityProperty, fadeOut);
+        };
+        _volumeFadeTimer.Start();
     }
 
     private void MediaButton_Click(object sender, RoutedEventArgs e)

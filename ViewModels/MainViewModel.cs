@@ -81,9 +81,12 @@ public partial class MainViewModel : ObservableObject
         }
 
         _notificationTimer?.Stop();
+        int duration = SettingsService.Instance.CurrentSettings.NotificationDuration;
+        if (duration < 2) duration = 5;
+
         _notificationTimer = new DispatcherTimer
         {
-            Interval = TimeSpan.FromSeconds(5)
+            Interval = TimeSpan.FromSeconds(duration)
         };
         _notificationTimer.Tick += (s, e) =>
         {

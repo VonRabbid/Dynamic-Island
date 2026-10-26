@@ -1,0 +1,197 @@
+<Window x:Class="DynamicIsland.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Ajustes - Dynamic Island"
+        Width="380" Height="450"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        ShowInTaskbar="True">
+
+    <Window.Resources>
+        <!-- Flat Slider Style -->
+        <Style TargetType="Slider">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Height" Value="24"/>
+        </Style>
+
+        <!-- Custom Dark Button Style -->
+        <Style x:Key="ActionButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#252530"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#353545"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#323242"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#4C4C62"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#1E1E28"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource ActionButtonStyle}">
+            <Setter Property="Background" Value="#38BDF8"/>
+            <Setter Property="Foreground" Value="#090D16"/>
+            <Setter Property="BorderBrush" Value="#7DD3FC"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#7DD3FC"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#0284C7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border Background="#16161C"
+            BorderBrush="#2A2A36"
+            BorderThickness="1"
+            CornerRadius="16"
+            Margin="10">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="22" ShadowDepth="6" Direction="270" Color="#000000" Opacity="0.6"/>
+        </Border.Effect>
+
+        <Grid Margin="18">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Grid Grid.Row="0" Margin="0,0,0,16" MouseLeftButtonDown="Header_MouseLeftButtonDown">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="10" Height="10" CornerRadius="5" Background="#38BDF8" Margin="0,0,8,0"/>
+                    <TextBlock Text="Ajustes de Dynamic Island"
+                               Foreground="#FFFFFF"
+                               FontSize="14.5"
+                               FontWeight="Bold"/>
+                </StackPanel>
+
+                <!-- Close button -->
+                <Button Grid.Column="1"
+                        Content="✕"
+                        Foreground="#8E8E9A"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        FontSize="13"
+                        Cursor="Hand"
+                        Width="26" Height="26"
+                        Click="CloseButton_Click"/>
+            </Grid>
+
+            <!-- Settings Content -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <!-- 1. Vertical Offset -->
+                    <Grid Margin="0,0,0,16">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid Grid.Row="0" Margin="0,0,0,6">
+                            <TextBlock Text="Separación Superior (Top Offset)" Foreground="#E2E2E8" FontSize="12.5" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="OffsetValueText" HorizontalAlignment="Right" Foreground="#38BDF8" FontSize="12" FontWeight="Bold" Text="0 px"/>
+                        </Grid>
+                        <Slider Grid.Row="1" x:Name="OffsetSlider" Minimum="0" Maximum="60" Value="0"
+                                SmallChange="1" LargeChange="5" IsSnapToTickEnabled="True" TickFrequency="1"
+                                ValueChanged="OffsetSlider_ValueChanged"/>
+                    </Grid>
+
+                    <!-- 2. Notification Duration -->
+                    <Grid Margin="0,0,0,16">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid Grid.Row="0" Margin="0,0,0,6">
+                            <TextBlock Text="Duración de Notificaciones" Foreground="#E2E2E8" FontSize="12.5" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="DurationValueText" HorizontalAlignment="Right" Foreground="#38BDF8" FontSize="12" FontWeight="Bold" Text="5 s"/>
+                        </Grid>
+                        <Slider Grid.Row="1" x:Name="DurationSlider" Minimum="3" Maximum="10" Value="5"
+                                SmallChange="1" LargeChange="1" IsSnapToTickEnabled="True" TickFrequency="1"
+                                ValueChanged="DurationSlider_ValueChanged"/>
+                    </Grid>
+
+                    <!-- 3. Island Scale -->
+                    <Grid Margin="0,0,0,16">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid Grid.Row="0" Margin="0,0,0,6">
+                            <TextBlock Text="Escala de Tamaño" Foreground="#E2E2E8" FontSize="12.5" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="ScaleValueText" HorizontalAlignment="Right" Foreground="#38BDF8" FontSize="12" FontWeight="Bold" Text="100%"/>
+                        </Grid>
+                        <Slider Grid.Row="1" x:Name="ScaleSlider" Minimum="0.8" Maximum="1.2" Value="1.0"
+                                SmallChange="0.05" LargeChange="0.1" IsSnapToTickEnabled="True" TickFrequency="0.05"
+                                ValueChanged="ScaleSlider_ValueChanged"/>
+                    </Grid>
+
+                    <!-- 4. Mouse Wheel Volume -->
+                    <CheckBox x:Name="VolumeWheelCheckBox"
+                              Content="Controlar volumen con la rueda del ratón"
+                              Foreground="#E2E2E8"
+                              FontSize="12"
+                              Margin="0,0,0,10"
+                              Cursor="Hand"
+                              Checked="VolumeWheelCheckBox_Changed"
+                              Unchecked="VolumeWheelCheckBox_Changed"/>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Footer Buttons -->
+            <Grid Grid.Row="2" Margin="0,16,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0"
+                        Content="Restablecer"
+                        Style="{StaticResource ActionButtonStyle}"
+                        HorizontalAlignment="Left"
+                        Click="ResetDefaults_Click"/>
+
+                <Button Grid.Column="1"
+                        Content="Guardar y Cerrar"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Click="SaveAndClose_Click"/>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

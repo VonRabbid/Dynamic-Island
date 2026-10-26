@@ -13,8 +13,8 @@
         Topmost="True"
         ShowInTaskbar="False"
         ResizeMode="NoResize"
-        Width="440"
-        Height="180"
+        Width="460"
+        Height="210"
         Left="0"
         Top="0">
 
@@ -89,7 +89,8 @@
                 Cursor="Hand"
                 MouseEnter="IslandBorder_MouseEnter"
                 MouseLeave="IslandBorder_MouseLeave"
-                MouseLeftButtonDown="IslandBorder_MouseLeftButtonDown">
+                MouseLeftButtonDown="IslandBorder_MouseLeftButtonDown"
+                PreviewMouseWheel="IslandBorder_PreviewMouseWheel">
 
             <Border.Effect>
                 <DropShadowEffect BlurRadius="18" ShadowDepth="4" Direction="270" Color="#000000" Opacity="0.55"/>
@@ -157,8 +158,9 @@
                 </Grid>
 
                 <!-- 3. ESTADO EXPANDIDO (Expanded) -->
-                <Grid x:Name="ExpandedView" Opacity="0" Visibility="Collapsed" Margin="16,14">
+                <Grid x:Name="ExpandedView" Opacity="0" Visibility="Collapsed" Margin="16,12">
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
@@ -171,10 +173,10 @@
                         </Grid.ColumnDefinitions>
 
                         <!-- Album Art -->
-                        <Border Grid.Column="0" Width="52" Height="52" CornerRadius="10" Background="#1B1B20" ClipToBounds="True" Margin="0,0,12,0">
+                        <Border Grid.Column="0" Width="48" Height="48" CornerRadius="10" Background="#1B1B20" ClipToBounds="True" Margin="0,0,12,0">
                             <Grid>
                                 <Path Data="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
-                                      Fill="#60606C" Stretch="Uniform" Width="22" Height="22"
+                                      Fill="#60606C" Stretch="Uniform" Width="20" Height="20"
                                       Visibility="{Binding Media.Thumbnail, Converter={StaticResource NullToVisibilityConverter}}" />
                                 <Image Source="{Binding Media.Thumbnail}" Stretch="UniformToFill"
                                        Visibility="{Binding Media.Thumbnail, Converter={StaticResource NotNullToVisibilityConverter}}" />
@@ -185,19 +187,53 @@
                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                             <TextBlock Text="{Binding Media.Title}"
                                        Foreground="#FFFFFF"
-                                       FontSize="13.5"
+                                       FontSize="13"
                                        FontWeight="Bold"
                                        TextTrimming="CharacterEllipsis"/>
                             <TextBlock Text="{Binding Media.Artist}"
                                        Foreground="#9E9EA8"
-                                       FontSize="11.5"
-                                       Margin="0,3,0,0"
+                                       FontSize="11"
+                                       Margin="0,2,0,0"
                                        TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
                     </Grid>
 
+                    <!-- Media Timeline (Progress Bar & Times) -->
+                    <Grid Grid.Row="1" Margin="0,8,0,2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <ProgressBar Grid.Row="0"
+                                     Value="{Binding Media.ProgressPercentage, Mode=OneWay}"
+                                     Minimum="0" Maximum="100"
+                                     Height="4"
+                                     Background="#25252E"
+                                     Foreground="#38BDF8"
+                                     BorderThickness="0"
+                                     IsHitTestVisible="False">
+                            <ProgressBar.Clip>
+                                <RectangleGeometry Rect="0,0,328,4" RadiusX="2" RadiusY="2"/>
+                            </ProgressBar.Clip>
+                        </ProgressBar>
+
+                        <Grid Grid.Row="1" Margin="0,3,0,0">
+                            <TextBlock HorizontalAlignment="Left"
+                                       Text="{Binding Media.PositionText}"
+                                       Foreground="#7A7A88"
+                                       FontSize="9.5"
+                                       FontFamily="Segoe UI"/>
+                            <TextBlock HorizontalAlignment="Right"
+                                       Text="{Binding Media.DurationText}"
+                                       Foreground="#7A7A88"
+                                       FontSize="9.5"
+                                       FontFamily="Segoe UI"/>
+                        </Grid>
+                    </Grid>
+
                     <!-- Controls Row -->
-                    <Grid Grid.Row="1" VerticalAlignment="Bottom" Margin="0,8,0,0">
+                    <Grid Grid.Row="2" VerticalAlignment="Bottom" Margin="0,4,0,0">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <!-- Previous Track Button -->
                             <Button Style="{StaticResource MediaButtonStyle}"
@@ -327,6 +363,35 @@
                               Height="9" />
                     </Button>
                 </Grid>
+
+                <!-- 5. FEEDBACK VISUAL DE VOLUMEN (Volume Feedback) -->
+                <Border x:Name="VolumeFeedbackOverlay"
+                        Background="#1A2232"
+                        BorderBrush="#2A3952"
+                        BorderThickness="1"
+                        CornerRadius="13"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Padding="10,4"
+                        Opacity="0"
+                        IsHitTestVisible="False">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Path x:Name="VolumeIcon"
+                              Data="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"
+                              Fill="#38BDF8"
+                              Stretch="Uniform"
+                              Width="12"
+                              Height="12"
+                              Margin="0,0,6,0"
+                              VerticalAlignment="Center"/>
+                        <TextBlock x:Name="VolumeText"
+                                   Text="Volumen"
+                                   Foreground="#38BDF8"
+                                   FontSize="10.5"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
             </Grid>
         </Border>
     </Grid>

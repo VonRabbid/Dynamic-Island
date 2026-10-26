@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using DynamicIsland.Services;
+using DynamicIsland.Views;
 using Application = System.Windows.Application;
 
 namespace DynamicIsland;
@@ -16,6 +17,14 @@ public partial class App : Application
         base.OnStartup(e);
 
         _trayService = new TrayService();
+        _trayService.OnSettingsRequested = () =>
+        {
+            Dispatcher.InvokeAsync(() =>
+            {
+                var settingsWin = new SettingsWindow();
+                settingsWin.ShowDialog();
+            });
+        };
         _trayService.OnResetPositionRequested = () =>
         {
             Dispatcher.InvokeAsync(() =>

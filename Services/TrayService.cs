@@ -14,6 +14,7 @@ public class TrayService : IDisposable
     private Forms.NotifyIcon? _notifyIcon;
     private Forms.ToolStripMenuItem? _startupMenuItem;
 
+    public Action? OnSettingsRequested { get; set; }
     public Action? OnResetPositionRequested { get; set; }
     public Action? OnExitRequested { get; set; }
 
@@ -49,19 +50,24 @@ public class TrayService : IDisposable
 
         contextMenu.Items.Add(new Forms.ToolStripSeparator());
 
-        // 3. Reiniciar posición
+        // 3. Configuración
+        var settingsItem = new Forms.ToolStripMenuItem("Configuración...");
+        settingsItem.Click += (s, e) => OnSettingsRequested?.Invoke();
+        contextMenu.Items.Add(settingsItem);
+
+        // 4. Reiniciar posición
         var resetItem = new Forms.ToolStripMenuItem("Reiniciar posición");
         resetItem.Click += (s, e) => OnResetPositionRequested?.Invoke();
         contextMenu.Items.Add(resetItem);
 
-        // 4. Salir
+        // 5. Salir
         var exitItem = new Forms.ToolStripMenuItem("Salir");
         exitItem.Click += (s, e) => OnExitRequested?.Invoke();
         contextMenu.Items.Add(exitItem);
 
         _notifyIcon.ContextMenuStrip = contextMenu;
 
-        _notifyIcon.DoubleClick += (s, e) => OnResetPositionRequested?.Invoke();
+        _notifyIcon.DoubleClick += (s, e) => OnSettingsRequested?.Invoke();
     }
 
     private Drawing.Icon LoadAppIcon()
