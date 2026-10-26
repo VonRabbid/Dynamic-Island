@@ -1,23 +1,213 @@
-﻿using System.Text;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
+using System.Windows.Media.Animation;
 using System.Windows.Shapes;
+using DynamicIsland.Helpers;
+using DynamicIsland.ViewModels;
 
 namespace DynamicIsland;
 
-/// <summary>
-/// Interaction logic for MainWindow.xaml
-/// </summary>
 public partial class MainWindow : Window
 {
+    private readonly MainViewModel _viewModel;
+
     public MainWindow()
     {
         InitializeComponent();
+
+        _viewModel = new MainViewModel();
+        DataContext = _viewModel;
+
+        _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+        _viewModel.Media.PropertyChanged += OnMediaPropertyChanged;
+
+        Loaded += OnLoaded;
+        Microsoft.Win32.SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
+    }
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        WindowHelper.ApplyNoActivateAndToolWindow(this);
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        CenterOnWorkArea();
+        ApplyState(_viewModel.CurrentState, animate: false);
+        UpdateEqualizerAnimation(_viewModel.Media.IsPlaying);
+    }
+
+    private void OnDisplaySettingsChanged(object? sender, EventArgs e)
+    {
+        Dispatcher.InvokeAsync(CenterOnWorkArea);
+    }
+
+    private void CenterOnWorkArea()
+    {
+        var workArea = SystemParameters.WorkArea;
+        Left = workArea.Left + (workArea.Width - Width) / 2;
+        Top = workArea.Top + 6;
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainViewModel.CurrentState))
+        {
+            Dispatcher.InvokeAsync(() => ApplyState(_viewModel.CurrentState, animate: true));
+        }
+    }
+
+    private void OnMediaPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(_viewModel.Media.IsPlaying))
+        {
+            Dispatcher.InvokeAsync(() => UpdateEqualizerAnimation(_viewModel.Media.IsPlaying));
+        }
+    }
+
+    private void ApplyState(IslandState state, bool animate)
+    {
+        double targetWidth;
+        double targetHeight;
+        double targetRadius;
+        FrameworkElement targetView;
+        var viewsToHide = new List<FrameworkElement>();
+
+        switch (state)
+        {
+            case IslandState.MusicPlaying:
+                targetWidth = 280;
+                targetHeight = 42;
+                targetRadius = 21;
+                targetView = MusicCompactView;
+                viewsToHide.Add(IdleView);
+                viewsToHide.Add(ExpandedView);
+                break;
+
+            case IslandState.Expanded:
+                targetWidth = 360;
+                targetHeight = 140;
+                targetRadius = 26;
+                targetView = ExpandedView;
+                viewsToHide.Add(IdleView);
+                viewsToHide.Add(MusicCompactView);
+                break;
+
+            case IslandState.Idle:
+            default:
+                targetWidth = 130;
+                targetHeight = 32;
+                targetRadius = 16;
+                targetView = IdleView;
+                viewsToHide.Add(MusicCompactView);
+                viewsToHide.Add(ExpandedView);
+                break;
+        }
+
+        if (!animate || !IsLoaded)
+        {
+            IslandBorder.Width = targetWidth;
+            IslandBorder.Height = targetHeight;
+            IslandBorder.CornerRadius = new CornerRadius(targetRadius);
+            targetView.Visibility = Visibility.Visible;
+            targetView.Opacity = 1;
+            foreach (var view in viewsToHide)
+            {
+                view.Visibility = Visibility.Collapsed;
+                view.Opacity = 0;
+            }
+            return;
+        }
+
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        var duration = TimeSpan.FromMilliseconds(320);
+
+        // Animación suave de ancho y alto
+        var widthAnim = new DoubleAnimation(targetWidth, duration) { EasingFunction = ease };
+        IslandBorder.BeginAnimation(WidthProperty, widthAnim);
+
+        var heightAnim = new DoubleAnimation(targetHeight, duration) { EasingFunction = ease };
+        IslandBorder.BeginAnimation(HeightProperty, heightAnim);
+
+        IslandBorder.CornerRadius = new CornerRadius(targetRadius);
+
+        // Desvanecer vistas previas
+        foreach (var view in viewsToHide)
+        {
+            if (view.Visibility == Visibility.Visible)
+            {
+                var fadeOut = new DoubleAnimation(0, TimeSpan.FromMilliseconds(140));
+                fadeOut.Completed += (s, e) => { view.Visibility = Visibility.Collapsed; };
+                view.BeginAnimation(OpacityProperty, fadeOut);
+            }
+        }
+
+        // Mostrar y desvanecer hacia adentro vista objetivo
+        targetView.Visibility = Visibility.Visible;
+        var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(240))
+        {
+            BeginTime = TimeSpan.FromMilliseconds(80),
+            EasingFunction = ease
+        };
+        targetView.BeginAnimation(OpacityProperty, fadeIn);
+    }
+
+    private void UpdateEqualizerAnimation(bool isPlaying)
+    {
+        if (isPlaying)
+        {
+            StartBarAnimation(Bar1, 4, 14, 450);
+            StartBarAnimation(Bar2, 8, 17, 360);
+            StartBarAnimation(Bar3, 3, 13, 410);
+            StartBarAnimation(Bar4, 6, 16, 330);
+        }
+        else
+        {
+            StopBarAnimation(Bar1, 4);
+            StopBarAnimation(Bar2, 4);
+            StopBarAnimation(Bar3, 4);
+            StopBarAnimation(Bar4, 4);
+        }
+    }
+
+    private void StartBarAnimation(Rectangle bar, double min, double max, int durationMs)
+    {
+        var anim = new DoubleAnimation(min, max, TimeSpan.FromMilliseconds(durationMs))
+        {
+            AutoReverse = true,
+            RepeatBehavior = RepeatBehavior.Forever,
+            EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+        };
+        bar.BeginAnimation(HeightProperty, anim);
+    }
+
+    private void StopBarAnimation(Rectangle bar, double idleHeight)
+    {
+        var anim = new DoubleAnimation(idleHeight, TimeSpan.FromMilliseconds(200));
+        bar.BeginAnimation(HeightProperty, anim);
+    }
+
+    private void IslandBorder_MouseEnter(object sender, MouseEventArgs e)
+    {
+        _viewModel.SetHoveredCommand.Execute(true);
+    }
+
+    private void IslandBorder_MouseLeave(object sender, MouseEventArgs e)
+    {
+        _viewModel.SetHoveredCommand.Execute(false);
+    }
+
+    private void IslandBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _viewModel.ToggleExpandCommand.Execute(null);
+    }
+
+    private void MediaButton_Click(object sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
     }
 }
