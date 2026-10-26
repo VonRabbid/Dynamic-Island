@@ -3,16 +3,20 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media.Animation;
-using System.Windows.Shapes;
 using DynamicIsland.Helpers;
+using DynamicIsland.Services;
 using DynamicIsland.ViewModels;
+using Rectangle = System.Windows.Shapes.Rectangle;
+using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 
 namespace DynamicIsland;
 
 public partial class MainWindow : Window
 {
     private readonly MainViewModel _viewModel;
+    private readonly FullscreenDetector _fullscreenDetector;
 
     public MainWindow()
     {
@@ -20,6 +24,9 @@ public partial class MainWindow : Window
 
         _viewModel = new MainViewModel();
         DataContext = _viewModel;
+
+        _fullscreenDetector = new FullscreenDetector();
+        _fullscreenDetector.FullscreenChanged += OnFullscreenChanged;
 
         _viewModel.PropertyChanged += OnViewModelPropertyChanged;
         _viewModel.Media.PropertyChanged += OnMediaPropertyChanged;
@@ -32,7 +39,10 @@ public partial class MainWindow : Window
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
+        var hWnd = new WindowInteropHelper(this).Handle;
         WindowHelper.ApplyNoActivateAndToolWindow(this);
+        _fullscreenDetector.SetWindowHandle(hWnd);
+        _fullscreenDetector.Start();
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -47,11 +57,56 @@ public partial class MainWindow : Window
         Dispatcher.InvokeAsync(CenterOnWorkArea);
     }
 
+    public void ResetPosition()
+    {
+        CenterOnWorkArea();
+        IslandBorder.Visibility = Visibility.Visible;
+        IslandBorder.Opacity = 1;
+        ApplyState(_viewModel.CurrentState, animate: true);
+    }
+
     private void CenterOnWorkArea()
     {
         var workArea = SystemParameters.WorkArea;
         Left = workArea.Left + (workArea.Width - Width) / 2;
         Top = workArea.Top + 6;
+    }
+
+    private void OnFullscreenChanged(object? sender, bool isFullscreen)
+    {
+        Dispatcher.InvokeAsync(() =>
+        {
+            if (isFullscreen)
+            {
+                var fadeOut = new DoubleAnimation(0, TimeSpan.FromMilliseconds(200));
+                fadeOut.Completed += (s, e) =>
+                {
+                    IslandBorder.Visibility = Visibility.Collapsed;
+                };
+                IslandBorder.BeginAnimation(OpacityProperty, fadeOut);
+            }
+            else
+            {
+                IslandBorder.Visibility = Visibility.Visible;
+                var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250))
+                {
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                };
+                IslandBorder.BeginAnimation(OpacityProperty, fadeIn);
+            }
+        });
+    }
+
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        if (!App.IsShuttingDown)
+        {
+            e.Cancel = true;
+            return;
+        }
+
+        _fullscreenDetector.Dispose();
+        base.OnClosing(e);
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -172,7 +227,6 @@ public partial class MainWindow : Window
 
     private void PlayNotificationPulse()
     {
-        // Micro-animación de pulso elástico cuando llega una nueva notificación sobre otra existente
         var bounce = new DoubleAnimationUsingKeyFrames();
         bounce.KeyFrames.Add(new SplineDoubleKeyFrame(360, KeyTime.FromTimeSpan(TimeSpan.Zero)));
         bounce.KeyFrames.Add(new SplineDoubleKeyFrame(374, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(100))));
