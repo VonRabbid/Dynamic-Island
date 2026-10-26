@@ -37,17 +37,17 @@ public class SettingsService
         {
             if (File.Exists(SettingsFilePath))
             {
-                string json = File.ReadAllText(SettingsFilePath);
+                using var fs = new FileStream(SettingsFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using var reader = new StreamReader(fs);
+                string json = reader.ReadToEnd();
+
                 var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions);
-                if (settings != null)
-                {
-                    return settings;
-                }
+                return SanitizeAndValidate(settings);
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[SettingsService] Error al cargar configuración: {ex.Message}");
+            Debug.WriteLine($"[SettingsService] Advertencia de seguridad o archivo de configuración corrupto: {ex.Message}");
         }
 
         var defaultSettings = new AppSettings();
@@ -57,16 +57,18 @@ public class SettingsService
 
     public void Save(AppSettings? settings = null)
     {
-        if (settings != null)
-        {
-            CurrentSettings = settings;
-        }
+        CurrentSettings = SanitizeAndValidate(settings ?? CurrentSettings);
 
         try
         {
             Directory.CreateDirectory(SettingsDirectory);
             string json = JsonSerializer.Serialize(CurrentSettings, JsonOptions);
-            File.WriteAllText(SettingsFilePath, json);
+
+            using var fs = new FileStream(SettingsFilePath, FileMode.Create, FileAccess.Write, FileShare.Read);
+            using var writer = new StreamWriter(fs);
+            writer.Write(json);
+            writer.Flush();
+
             SettingsChanged?.Invoke(CurrentSettings);
         }
         catch (Exception ex)
@@ -75,8 +77,44 @@ public class SettingsService
         }
     }
 
+    /// <summary>
+    /// Validación defensiva de límites y tipos para evitar inyecciones o estados inválidos.
+    /// </summary>
+    public static AppSettings SanitizeAndValidate(AppSettings? settings)
+    {
+        if (settings == null)
+            return new AppSettings();
+
+        // 1. Limitar VerticalOffset entre 0 y 200 px
+        if (double.IsNaN(settings.VerticalOffset) || double.IsInfinity(settings.VerticalOffset) || settings.VerticalOffset < 0.0 || settings.VerticalOffset > 200.0)
+        {
+            settings.VerticalOffset = Math.Clamp(double.IsNaN(settings.VerticalOffset) ? 0.0 : settings.VerticalOffset, 0.0, 200.0);
+        }
+
+        // 2. Limitar NotificationDuration entre 1 y 15 segundos
+        if (settings.NotificationDuration < 1 || settings.NotificationDuration > 15)
+        {
+            settings.NotificationDuration = Math.Clamp(settings.NotificationDuration, 1, 15);
+        }
+
+        // 3. Limitar IslandScale entre 0.5 y 1.5
+        if (double.IsNaN(settings.IslandScale) || double.IsInfinity(settings.IslandScale) || settings.IslandScale < 0.5 || settings.IslandScale > 1.5)
+        {
+            settings.IslandScale = Math.Clamp(double.IsNaN(settings.IslandScale) ? 1.0 : settings.IslandScale, 0.5, 1.5);
+        }
+
+        // 4. Sanitizar SelectedMonitorDeviceName
+        if (string.IsNullOrWhiteSpace(settings.SelectedMonitorDeviceName) || settings.SelectedMonitorDeviceName.Length > 128)
+        {
+            settings.SelectedMonitorDeviceName = "Primary";
+        }
+
+        return settings;
+    }
+
     public void NotifyChanged()
     {
+        CurrentSettings = SanitizeAndValidate(CurrentSettings);
         SettingsChanged?.Invoke(CurrentSettings);
     }
 }

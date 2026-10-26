@@ -70,7 +70,7 @@ public class TrayService : IDisposable
         _notifyIcon.DoubleClick += (s, e) => OnSettingsRequested?.Invoke();
     }
 
-    private Drawing.Icon LoadAppIcon()
+    private static Drawing.Icon LoadAppIcon()
     {
         try
         {
@@ -85,7 +85,7 @@ public class TrayService : IDisposable
         return Drawing.SystemIcons.Application;
     }
 
-    private bool IsStartupEnabled()
+    private static bool IsStartupEnabled()
     {
         try
         {
@@ -104,7 +104,7 @@ public class TrayService : IDisposable
         SetStartupEnabled(_startupMenuItem.Checked);
     }
 
-    public void SetStartupEnabled(bool enable)
+    public static void SetStartupEnabled(bool enable)
     {
         try
         {
@@ -139,5 +139,6 @@ public class TrayService : IDisposable
             _notifyIcon.Dispose();
             _notifyIcon = null;
         }
+        GC.SuppressFinalize(this);
     }
 }

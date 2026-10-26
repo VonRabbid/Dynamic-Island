@@ -9,7 +9,7 @@ public class KeyboardHookService : IDisposable
     private const int WH_KEYBOARD_LL = 13;
     private const int WM_KEYDOWN = 0x0100;
     private const int WM_KEYUP = 0x0101;
-    private const int VK_CAPITAL = 0x14;
+    private const int VK_CAPITAL = 0x14; // Tecla Bloq Mayús (Caps Lock)
 
     private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
 
@@ -26,7 +26,7 @@ public class KeyboardHookService : IDisposable
     [DllImport("user32.dll")]
     private static extern short GetKeyState(int nVirtKey);
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, EntryPoint = "GetModuleHandleW", SetLastError = true)]
     private static extern IntPtr GetModuleHandle(string? lpModuleName);
 
     private readonly LowLevelKeyboardProc _proc;
@@ -59,21 +59,35 @@ public class KeyboardHookService : IDisposable
         }
     }
 
+    // =========================================================================================
+    // AUDITORÍA DE SEGURIDAD Y PRIVACIDAD (PRIVACY & SECURITY AUDIT)
+    // -----------------------------------------------------------------------------------------
+    // 1. FILTRADO INMEDIATO: Este callback evalúa exclusivamente el código de tecla virtual (vkCode)
+    //    y descarta inmediatamente en la primera instrucción cualquier tecla diferente a VK_CAPITAL (0x14).
+    // 2. SIN REGISTRO NI PERSISTENCIA: NINGÚN dato de teclado (texto, códigos o pulsaciones) es
+    //    almacenado en búferes, variables temporales, memoria heap, archivos de registro ni sockets de red.
+    // 3. NO ES UN KEYLOGGER: La aplicación no intercepta pulsaciones de usuario; únicamente detecta
+    //    la liberación de la tecla Bloq Mayús para consultar el bit de estado de alternancia en Windows.
+    // =========================================================================================
     private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
     {
-        if (nCode >= 0 && (wParam == (IntPtr)WM_KEYUP || wParam == (IntPtr)WM_KEYDOWN))
+        if (nCode >= 0 && wParam == (IntPtr)WM_KEYUP)
         {
             int vkCode = Marshal.ReadInt32(lParam);
-            if (vkCode == VK_CAPITAL && wParam == (IntPtr)WM_KEYUP)
+
+            // Descarte estricto de cualquier tecla que NO sea VK_CAPITAL (0x14)
+            if (vkCode == VK_CAPITAL)
             {
                 if (SettingsService.Instance.CurrentSettings.EnableCapsLockAlert)
                 {
+                    // Consultar únicamente el bit de estado (toggled) del sistema
                     bool isCapsLock = (GetKeyState(VK_CAPITAL) & 1) != 0;
                     CapsLockChanged?.Invoke(this, isCapsLock);
                 }
             }
         }
 
+        // Retorno inmediato al siguiente hook en la cadena de Windows sin demoras ni retención
         return CallNextHookEx(_hookId, nCode, wParam, lParam);
     }
 
@@ -89,5 +103,6 @@ public class KeyboardHookService : IDisposable
             UnhookWindowsHookEx(_hookId);
             _hookId = IntPtr.Zero;
         }
+        GC.SuppressFinalize(this);
     }
 }

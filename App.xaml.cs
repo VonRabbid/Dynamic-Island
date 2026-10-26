@@ -7,7 +7,7 @@ using Application = System.Windows.Application;
 
 namespace DynamicIsland;
 
-public partial class App : Application
+public partial class App : Application, IDisposable
 {
     private TrayService? _trayService;
 
@@ -57,9 +57,15 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        Dispose();
+        base.OnExit(e);
+    }
+
+    public void Dispose()
+    {
         _trayService?.Dispose();
         KeyboardHookService.Instance.Dispose();
         PowerStatusService.Instance.Dispose();
-        base.OnExit(e);
+        GC.SuppressFinalize(this);
     }
 }

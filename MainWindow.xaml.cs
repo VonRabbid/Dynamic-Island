@@ -16,7 +16,7 @@ using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 
 namespace DynamicIsland;
 
-public partial class MainWindow : Window
+public partial class MainWindow : Window, IDisposable
 {
     private readonly MainViewModel _viewModel;
     private readonly FullscreenDetector _fullscreenDetector;
@@ -144,8 +144,14 @@ public partial class MainWindow : Window
             return;
         }
 
-        _fullscreenDetector.Dispose();
+        Dispose();
         base.OnClosing(e);
+    }
+
+    public void Dispose()
+    {
+        _fullscreenDetector.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -329,7 +335,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void StartBarAnimation(Rectangle bar, double min, double max, int durationMs)
+    private static void StartBarAnimation(Rectangle bar, double min, double max, int durationMs)
     {
         var anim = new DoubleAnimation(min, max, TimeSpan.FromMilliseconds(durationMs))
         {
@@ -340,7 +346,7 @@ public partial class MainWindow : Window
         bar.BeginAnimation(HeightProperty, anim);
     }
 
-    private void StopBarAnimation(Rectangle bar, double idleHeight)
+    private static void StopBarAnimation(Rectangle bar, double idleHeight)
     {
         var anim = new DoubleAnimation(idleHeight, TimeSpan.FromMilliseconds(200));
         bar.BeginAnimation(HeightProperty, anim);

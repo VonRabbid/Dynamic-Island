@@ -36,13 +36,13 @@ public class FullscreenDetector : IDisposable
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
 
-    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-    private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "GetClassNameW")]
+    private static extern int GetClassName(IntPtr hWnd, [Out] char[] lpClassName, int nMaxCount);
 
     [DllImport("user32.dll")]
     private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
 
-    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "GetMonitorInfoW")]
     private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
 
     private readonly DispatcherTimer _checkTimer;
@@ -93,9 +93,11 @@ public class FullscreenDetector : IDisposable
         if (fgWnd == IntPtr.Zero || fgWnd == GetShellWindow() || fgWnd == _windowHandle)
             return false;
 
-        var sb = new StringBuilder(256);
-        GetClassName(fgWnd, sb, sb.Capacity);
-        string className = sb.ToString();
+        var buffer = new char[256];
+        int count = GetClassName(fgWnd, buffer, buffer.Length);
+        if (count <= 0)
+            return false;
+        string className = new string(buffer, 0, count);
 
         // Excluir ventanas del sistema, escritorio o barra de tareas
         if (className is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Shell_SecondaryTrayWnd"
@@ -140,5 +142,6 @@ public class FullscreenDetector : IDisposable
     public void Dispose()
     {
         _checkTimer.Stop();
+        GC.SuppressFinalize(this);
     }
 }

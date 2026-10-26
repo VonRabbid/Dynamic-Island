@@ -54,6 +54,22 @@ jobs:
               ISCC.exe installer/setup.iss /O./publish_installer /FDynamicIsland-Setup-v1.0.0
           }
 
+      - name: Generate Cryptographic SHA-256 Checksums
+        run: |
+          $hashes = @()
+          $zipHash = (Get-FileHash -Algorithm SHA256 ./DynamicIsland-Windows-x64.zip).Hash.ToLower()
+          $hashes += "$zipHash  DynamicIsland-Windows-x64.zip"
+
+          $exePath = "./publish_installer/DynamicIsland-Setup-v1.0.0.exe"
+          if (Test-Path $exePath) {
+              $exeHash = (Get-FileHash -Algorithm SHA256 $exePath).Hash.ToLower()
+              $hashes += "$exeHash  DynamicIsland-Setup-v1.0.0.exe"
+          }
+
+          $hashes | Out-File -FilePath ./checksums.txt -Encoding utf8
+          Write-Host "Generated SHA-256 Checksums:"
+          Get-Content ./checksums.txt
+
       - name: Generate Release Tag
         id: vars
         shell: bash
@@ -75,5 +91,6 @@ jobs:
           files: |
             DynamicIsland-Windows-x64.zip
             publish_installer/DynamicIsland-Setup-v1.0.0.exe
+            checksums.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

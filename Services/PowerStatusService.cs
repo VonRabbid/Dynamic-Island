@@ -38,7 +38,7 @@ public class PowerStatusService : IDisposable
         }
     }
 
-    private bool CheckHasBattery()
+    private static bool CheckHasBattery()
     {
         try
         {
@@ -148,5 +148,6 @@ public class PowerStatusService : IDisposable
     {
         _pollTimer.Stop();
         SystemEvents.PowerModeChanged -= OnPowerModeChanged;
+        GC.SuppressFinalize(this);
     }
 }

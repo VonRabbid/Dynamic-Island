@@ -68,7 +68,7 @@ public class NotificationService
             if (userNotification == null)
                 return;
 
-            string appName = userNotification.AppInfo?.DisplayInfo?.DisplayName ?? "Sistema";
+            string rawAppName = userNotification.AppInfo?.DisplayInfo?.DisplayName ?? "Sistema";
 
             var binding = userNotification.Notification?.Visual?.GetBinding(KnownNotificationBindings.ToastGeneric);
             if (binding == null && userNotification.Notification?.Visual?.Bindings?.Count > 0)
@@ -76,8 +76,8 @@ public class NotificationService
                 binding = userNotification.Notification.Visual.Bindings[0];
             }
 
-            string title = appName;
-            string message = string.Empty;
+            string rawTitle = rawAppName;
+            string rawMessage = string.Empty;
 
             if (binding != null)
             {
@@ -91,15 +91,20 @@ public class NotificationService
 
                 if (textList.Count > 0)
                 {
-                    title = textList[0];
+                    rawTitle = textList[0];
                     if (textList.Count > 1)
                     {
-                        message = string.Join(" ", textList.Skip(1));
+                        rawMessage = string.Join(" ", textList.Skip(1));
                     }
                 }
             }
 
-            var model = new NotificationModel(appName, title, message);
+            // Sanitización defensiva contra caracteres de control, secuencias Bidi maliciosas y DoS de layout
+            string cleanAppName = NotificationModel.Sanitize(rawAppName, 60);
+            string cleanTitle = NotificationModel.Sanitize(rawTitle, 100);
+            string cleanMessage = NotificationModel.Sanitize(rawMessage, 250);
+
+            var model = new NotificationModel(cleanAppName, cleanTitle, cleanMessage);
             OnNotificationReceived?.Invoke(this, model);
         }
         catch (Exception ex)

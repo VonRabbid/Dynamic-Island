@@ -7,7 +7,7 @@ namespace DynamicIsland.Converters;
 
 public class NullToVisibilityConverter : IValueConverter
 {
-    public bool Invert { get; set; } = false;
+    public bool Invert { get; set; }
 
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {

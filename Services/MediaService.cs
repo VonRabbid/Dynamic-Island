@@ -218,8 +218,8 @@ public partial class MediaService : ObservableObject
     {
         if (ts < TimeSpan.Zero) ts = TimeSpan.Zero;
         return ts.TotalHours >= 1
-            ? ts.ToString(@"h\:mm\:ss")
-            : ts.ToString(@"m\:ss");
+            ? ts.ToString(@"h\:mm\:ss", System.Globalization.CultureInfo.InvariantCulture)
+            : ts.ToString(@"m\:ss", System.Globalization.CultureInfo.InvariantCulture);
     }
 
     private async Task UpdateMediaPropertiesAsync(GlobalSystemMediaTransportControlsSessionMediaProperties? props)
@@ -251,7 +251,7 @@ public partial class MediaService : ObservableObject
         }
     }
 
-    private async Task<ImageSource?> LoadThumbnailAsync(IRandomAccessStreamReference? thumbnailRef)
+    private static async Task<ImageSource?> LoadThumbnailAsync(IRandomAccessStreamReference? thumbnailRef)
     {
         if (thumbnailRef == null) return null;
 
