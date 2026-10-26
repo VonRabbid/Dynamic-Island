@@ -23,7 +23,7 @@
         <converters:NullToVisibilityConverter x:Key="NotNullToVisibilityConverter" Invert="True" />
         <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
 
-        <!-- Standard Button Style for Media Controls -->
+        <!-- Standard Button Style for Media and Dismiss Controls -->
         <Style x:Key="MediaButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -262,6 +262,70 @@
                             </Button>
                         </StackPanel>
                     </Grid>
+                </Grid>
+
+                <!-- 4. ESTADO NOTIFICACIÓN (Notification) -->
+                <Grid x:Name="NotificationView" Opacity="0" Visibility="Collapsed" Margin="10,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- App Badge -->
+                    <Border Grid.Column="0"
+                            Background="#182436"
+                            BorderBrush="#253A5A"
+                            BorderThickness="1"
+                            CornerRadius="11"
+                            Padding="8,3.5"
+                            VerticalAlignment="Center"
+                            Margin="0,0,10,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Path Data="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"
+                                  Fill="#38BDF8"
+                                  Stretch="Uniform"
+                                  Width="11"
+                                  Height="11"
+                                  Margin="0,0,5,0"
+                                  VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding CurrentNotification.AppName}"
+                                       Foreground="#38BDF8"
+                                       FontSize="10.5"
+                                       FontWeight="Bold"
+                                       VerticalAlignment="Center"
+                                       MaxHeight="15"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Notification Title & Body -->
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,6,0">
+                        <TextBlock Text="{Binding CurrentNotification.Title}"
+                                   Foreground="#FFFFFF"
+                                   FontSize="11.5"
+                                   FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis"
+                                   MaxHeight="16" />
+                        <TextBlock Text="{Binding CurrentNotification.Message}"
+                                   Foreground="#9EABB8"
+                                   FontSize="9.5"
+                                   TextTrimming="CharacterEllipsis"
+                                   MaxHeight="14" />
+                    </StackPanel>
+
+                    <!-- Dismiss Action Button -->
+                    <Button Grid.Column="2"
+                            Style="{StaticResource MediaButtonStyle}"
+                            Command="{Binding DismissNotificationCommand}"
+                            Click="MediaButton_Click"
+                            ToolTip="Descartar"
+                            Width="22" Height="22" Margin="4,0,2,0">
+                        <Path Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                              Fill="#64748B"
+                              Stretch="Uniform"
+                              Width="9"
+                              Height="9" />
+                    </Button>
                 </Grid>
             </Grid>
         </Border>

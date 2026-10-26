@@ -23,6 +23,7 @@ public partial class MainWindow : Window
 
         _viewModel.PropertyChanged += OnViewModelPropertyChanged;
         _viewModel.Media.PropertyChanged += OnMediaPropertyChanged;
+        _viewModel.NotificationPulsed += (s, e) => Dispatcher.InvokeAsync(PlayNotificationPulse);
 
         Loaded += OnLoaded;
         Microsoft.Win32.SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
@@ -79,6 +80,16 @@ public partial class MainWindow : Window
 
         switch (state)
         {
+            case IslandState.Notification:
+                targetWidth = 360;
+                targetHeight = 48;
+                targetRadius = 24;
+                targetView = NotificationView;
+                viewsToHide.Add(IdleView);
+                viewsToHide.Add(MusicCompactView);
+                viewsToHide.Add(ExpandedView);
+                break;
+
             case IslandState.MusicPlaying:
                 targetWidth = 280;
                 targetHeight = 42;
@@ -86,6 +97,7 @@ public partial class MainWindow : Window
                 targetView = MusicCompactView;
                 viewsToHide.Add(IdleView);
                 viewsToHide.Add(ExpandedView);
+                viewsToHide.Add(NotificationView);
                 break;
 
             case IslandState.Expanded:
@@ -95,6 +107,7 @@ public partial class MainWindow : Window
                 targetView = ExpandedView;
                 viewsToHide.Add(IdleView);
                 viewsToHide.Add(MusicCompactView);
+                viewsToHide.Add(NotificationView);
                 break;
 
             case IslandState.Idle:
@@ -105,6 +118,7 @@ public partial class MainWindow : Window
                 targetView = IdleView;
                 viewsToHide.Add(MusicCompactView);
                 viewsToHide.Add(ExpandedView);
+                viewsToHide.Add(NotificationView);
                 break;
         }
 
@@ -126,7 +140,7 @@ public partial class MainWindow : Window
         var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
         var duration = TimeSpan.FromMilliseconds(320);
 
-        // Animación suave de ancho y alto
+        // Animación de ancho y alto
         var widthAnim = new DoubleAnimation(targetWidth, duration) { EasingFunction = ease };
         IslandBorder.BeginAnimation(WidthProperty, widthAnim);
 
@@ -154,6 +168,22 @@ public partial class MainWindow : Window
             EasingFunction = ease
         };
         targetView.BeginAnimation(OpacityProperty, fadeIn);
+    }
+
+    private void PlayNotificationPulse()
+    {
+        // Micro-animación de pulso elástico cuando llega una nueva notificación sobre otra existente
+        var bounce = new DoubleAnimationUsingKeyFrames();
+        bounce.KeyFrames.Add(new SplineDoubleKeyFrame(360, KeyTime.FromTimeSpan(TimeSpan.Zero)));
+        bounce.KeyFrames.Add(new SplineDoubleKeyFrame(374, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(100))));
+        bounce.KeyFrames.Add(new SplineDoubleKeyFrame(360, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(250))));
+        IslandBorder.BeginAnimation(WidthProperty, bounce);
+
+        var flash = new DoubleAnimationUsingKeyFrames();
+        flash.KeyFrames.Add(new LinearDoubleKeyFrame(1.0, KeyTime.FromTimeSpan(TimeSpan.Zero)));
+        flash.KeyFrames.Add(new LinearDoubleKeyFrame(0.4, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(100))));
+        flash.KeyFrames.Add(new LinearDoubleKeyFrame(1.0, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(250))));
+        NotificationView.BeginAnimation(OpacityProperty, flash);
     }
 
     private void UpdateEqualizerAnimation(bool isPlaying)
