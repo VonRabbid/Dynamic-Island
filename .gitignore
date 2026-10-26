@@ -482,3 +482,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Inno Setup output & release archives
+publish_installer/
+*.zip
