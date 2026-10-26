@@ -115,6 +115,7 @@ public partial class MainWindow : Window
         {
             if (isFullscreen)
             {
+                _viewModel.Media.SetSuspended(true);
                 var fadeOut = new DoubleAnimation(0, TimeSpan.FromMilliseconds(200));
                 fadeOut.Completed += (s, e) =>
                 {
@@ -124,6 +125,7 @@ public partial class MainWindow : Window
             }
             else
             {
+                _viewModel.Media.SetSuspended(false);
                 IslandBorder.Visibility = Visibility.Visible;
                 var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250))
                 {

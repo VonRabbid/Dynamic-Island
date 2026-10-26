@@ -237,6 +237,20 @@ public partial class MediaService : ObservableObject
         Thumbnail = await LoadThumbnailAsync(props.Thumbnail);
     }
 
+    public void SetSuspended(bool suspended)
+    {
+        if (suspended)
+        {
+            if (_timelineTimer.IsEnabled)
+                _timelineTimer.Stop();
+        }
+        else
+        {
+            if (IsPlaying && !_timelineTimer.IsEnabled)
+                _timelineTimer.Start();
+        }
+    }
+
     private async Task<ImageSource?> LoadThumbnailAsync(IRandomAccessStreamReference? thumbnailRef)
     {
         if (thumbnailRef == null) return null;
@@ -255,7 +269,8 @@ public partial class MediaService : ObservableObject
             using (var ms = new MemoryStream(bytes))
             {
                 bitmap.BeginInit();
-                bitmap.CreateOptions = BitmapCreateOptions.None;
+                bitmap.DecodePixelWidth = 80;
+                bitmap.CreateOptions = BitmapCreateOptions.DelayCreation;
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
                 bitmap.StreamSource = ms;
                 bitmap.EndInit();

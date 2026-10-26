@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using System.Windows.Media;
 using DynamicIsland.Services;
 using DynamicIsland.Views;
 using Application = System.Windows.Application;
@@ -15,6 +16,9 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        // Aceleración por hardware completa en pipeline de renderizado D3D de WPF
+        RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.Default;
 
         _trayService = new TrayService();
         _trayService.OnSettingsRequested = () =>
