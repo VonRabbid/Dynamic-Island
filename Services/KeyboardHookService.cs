@@ -1,36 +1,18 @@
 using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Windows.Threading;
 
 namespace DynamicIsland.Services;
 
 public class KeyboardHookService : IDisposable
 {
-    private const int WH_KEYBOARD_LL = 13;
-    private const int WM_KEYDOWN = 0x0100;
-    private const int WM_KEYUP = 0x0101;
     private const int VK_CAPITAL = 0x14; // Tecla Bloq Mayús (Caps Lock)
-
-    private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool UnhookWindowsHookEx(IntPtr hhk);
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
 
     [DllImport("user32.dll")]
     private static extern short GetKeyState(int nVirtKey);
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, EntryPoint = "GetModuleHandleW", SetLastError = true)]
-    private static extern IntPtr GetModuleHandle(string? lpModuleName);
-
-    private readonly LowLevelKeyboardProc _proc;
-    private IntPtr _hookId = IntPtr.Zero;
+    private readonly DispatcherTimer _pollTimer;
+    private bool _lastState;
 
     public static KeyboardHookService Instance { get; } = new();
 
@@ -38,71 +20,60 @@ public class KeyboardHookService : IDisposable
 
     public KeyboardHookService()
     {
-        _proc = HookCallback;
+        _lastState = IsCapsLockActive();
+
+        _pollTimer = new DispatcherTimer(DispatcherPriority.Background)
+        {
+            Interval = TimeSpan.FromMilliseconds(150)
+        };
+        _pollTimer.Tick += OnPollTick;
         Start();
     }
 
     public void Start()
     {
-        if (_hookId != IntPtr.Zero) return;
-
-        try
+        if (!_pollTimer.IsEnabled)
         {
-            using var curProcess = Process.GetCurrentProcess();
-            using var curModule = curProcess.MainModule;
-            IntPtr moduleHandle = curModule != null ? GetModuleHandle(curModule.ModuleName) : IntPtr.Zero;
-            _hookId = SetWindowsHookEx(WH_KEYBOARD_LL, _proc, moduleHandle, 0);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[KeyboardHookService] Error al instalar hook de teclado: {ex.Message}");
+            _lastState = IsCapsLockActive();
+            _pollTimer.Start();
         }
     }
 
-    // =========================================================================================
-    // AUDITORÍA DE SEGURIDAD Y PRIVACIDAD (PRIVACY & SECURITY AUDIT)
-    // -----------------------------------------------------------------------------------------
-    // 1. FILTRADO INMEDIATO: Este callback evalúa exclusivamente el código de tecla virtual (vkCode)
-    //    y descarta inmediatamente en la primera instrucción cualquier tecla diferente a VK_CAPITAL (0x14).
-    // 2. SIN REGISTRO NI PERSISTENCIA: NINGÚN dato de teclado (texto, códigos o pulsaciones) es
-    //    almacenado en búferes, variables temporales, memoria heap, archivos de registro ni sockets de red.
-    // 3. NO ES UN KEYLOGGER: La aplicación no intercepta pulsaciones de usuario; únicamente detecta
-    //    la liberación de la tecla Bloq Mayús para consultar el bit de estado de alternancia en Windows.
-    // =========================================================================================
-    private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
+    public void Stop()
     {
-        if (nCode >= 0 && wParam == (IntPtr)WM_KEYUP)
+        if (_pollTimer.IsEnabled)
         {
-            int vkCode = Marshal.ReadInt32(lParam);
-
-            // Descarte estricto de cualquier tecla que NO sea VK_CAPITAL (0x14)
-            if (vkCode == VK_CAPITAL)
-            {
-                if (SettingsService.Instance.CurrentSettings.EnableCapsLockAlert)
-                {
-                    // Consultar únicamente el bit de estado (toggled) del sistema
-                    bool isCapsLock = (GetKeyState(VK_CAPITAL) & 1) != 0;
-                    CapsLockChanged?.Invoke(this, isCapsLock);
-                }
-            }
+            _pollTimer.Stop();
         }
+    }
 
-        // Retorno inmediato al siguiente hook en la cadena de Windows sin demoras ni retención
-        return CallNextHookEx(_hookId, nCode, wParam, lParam);
+    private void OnPollTick(object? sender, EventArgs e)
+    {
+        if (!SettingsService.Instance.CurrentSettings.EnableCapsLockAlert)
+            return;
+
+        bool currentState = IsCapsLockActive();
+        if (currentState != _lastState)
+        {
+            _lastState = currentState;
+            CapsLockChanged?.Invoke(this, currentState);
+        }
+    }
+
+    private static bool IsCapsLockActive()
+    {
+        return (GetKeyState(VK_CAPITAL) & 0x0001) != 0;
     }
 
     public void TriggerTestAlert(bool isCapsLock)
     {
+        _lastState = isCapsLock;
         CapsLockChanged?.Invoke(this, isCapsLock);
     }
 
     public void Dispose()
     {
-        if (_hookId != IntPtr.Zero)
-        {
-            UnhookWindowsHookEx(_hookId);
-            _hookId = IntPtr.Zero;
-        }
+        _pollTimer.Stop();
         GC.SuppressFinalize(this);
     }
 }

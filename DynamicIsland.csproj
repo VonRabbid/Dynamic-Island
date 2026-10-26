@@ -7,9 +7,20 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <ApplicationIcon>app.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
     <PublishSingleFile>true</PublishSingleFile>
     <PublishReadyToRun>true</PublishReadyToRun>
+
+    <!-- Metadatos institucionales y de ensamblado -->
+    <Company>VonRabbid</Company>
+    <Product>Dynamic Island for Windows</Product>
+    <Description>Overlay no intrusivo para control de medios y notificaciones en Windows</Description>
+    <Copyright>Copyright © 2026 VonRabbid</Copyright>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Version>1.0.0</Version>
 
     <!-- Directivas de seguridad y análisis estático estricto del compilador -->
     <AnalysisLevel>latest-recommended</AnalysisLevel>
