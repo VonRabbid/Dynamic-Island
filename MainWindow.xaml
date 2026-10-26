@@ -102,7 +102,7 @@
 
             <Grid ClipToBounds="True">
                 <!-- 1. ESTADO REPOSO (Idle) -->
-                <Grid x:Name="IdleView" Opacity="1" ClipToBounds="True">
+                <Grid x:Name="IdleView" Panel.ZIndex="1" Opacity="1" ClipToBounds="True">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <!-- Sensor indicator dot -->
                         <Ellipse Width="8" Height="8" Fill="#1A1A22" Margin="0,0,8,0">
@@ -119,20 +119,36 @@
                 </Grid>
 
                 <!-- 2. ESTADO MÚSICA COMPACTO (MusicPlaying) -->
-                <Grid x:Name="MusicCompactView" Opacity="0" Visibility="Collapsed" Margin="8,0" ClipToBounds="True">
+                <Grid x:Name="MusicCompactView" Panel.ZIndex="5" Opacity="0" Visibility="Collapsed" Margin="8,0" ClipToBounds="True">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <!-- Album Art Thumbnail -->
-                    <Border Grid.Column="0" Width="26" Height="26" CornerRadius="6" Background="#1B1B20" ClipToBounds="True" VerticalAlignment="Center" Margin="0,0,8,0">
+                    <!-- Album Art Thumbnail con Fallback Estilizado -->
+                    <Border Grid.Column="0" Width="26" Height="26" CornerRadius="6" ClipToBounds="True" VerticalAlignment="Center" Margin="0,0,8,0" Background="#181820">
                         <Grid>
-                            <Path Data="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
-                                  Fill="#80808C" Stretch="Uniform" Width="12" Height="12"
-                                  Visibility="{Binding Media.Thumbnail, Converter={StaticResource NullToVisibilityConverter}}" />
-                            <Image Source="{Binding Media.Thumbnail}" Stretch="UniformToFill"
+                            <!-- Placeholder degradado cuando Thumbnail es null -->
+                            <Border CornerRadius="6" Visibility="{Binding Media.Thumbnail, Converter={StaticResource NullToVisibilityConverter}}">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#22222E" Offset="0.0"/>
+                                        <GradientStop Color="#181820" Offset="1.0"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <Path Data="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+                                      Fill="#A2A2B2"
+                                      Stretch="Uniform"
+                                      Width="12"
+                                      Height="12"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
+                            </Border>
+
+                            <!-- Miniatura real si Thumbnail está disponible -->
+                            <Image Source="{Binding Media.Thumbnail}"
+                                   Stretch="UniformToFill"
                                    RenderOptions.BitmapScalingMode="HighQuality"
                                    Visibility="{Binding Media.Thumbnail, Converter={StaticResource NotNullToVisibilityConverter}}" />
                         </Grid>
@@ -163,7 +179,7 @@
                 </Grid>
 
                 <!-- 3. ESTADO EXPANDIDO (Expanded) -->
-                <Grid x:Name="ExpandedView" Opacity="0" Visibility="Collapsed" Margin="16,12" ClipToBounds="True">
+                <Grid x:Name="ExpandedView" Panel.ZIndex="10" Opacity="0" Visibility="Collapsed" Margin="16,12" ClipToBounds="True">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -177,13 +193,35 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Album Art -->
-                        <Border Grid.Column="0" Width="48" Height="48" CornerRadius="10" Background="#1B1B20" ClipToBounds="True" Margin="0,0,12,0">
+                        <!-- Album Art con Fallback Estilizado -->
+                        <Border Grid.Column="0" Width="48" Height="48" CornerRadius="10" ClipToBounds="True" Margin="0,0,12,0" Background="#181820">
                             <Grid>
-                                <Path Data="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
-                                      Fill="#60606C" Stretch="Uniform" Width="20" Height="20"
-                                      Visibility="{Binding Media.Thumbnail, Converter={StaticResource NullToVisibilityConverter}}" />
-                                <Image Source="{Binding Media.Thumbnail}" Stretch="UniformToFill"
+                                <!-- Placeholder elegante cuando Thumbnail es null -->
+                                <Border CornerRadius="10" Visibility="{Binding Media.Thumbnail, Converter={StaticResource NullToVisibilityConverter}}">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                            <GradientStop Color="#22222E" Offset="0.0"/>
+                                            <GradientStop Color="#181820" Offset="1.0"/>
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                    <Grid>
+                                        <Path Data="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+                                              Fill="#B0B0C4"
+                                              Stretch="Uniform"
+                                              Width="22"
+                                              Height="22"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center">
+                                            <Path.Effect>
+                                                <DropShadowEffect BlurRadius="8" ShadowDepth="0" Color="#38BDF8" Opacity="0.35"/>
+                                            </Path.Effect>
+                                        </Path>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Miniatura real si Thumbnail está disponible -->
+                                <Image Source="{Binding Media.Thumbnail}"
+                                       Stretch="UniformToFill"
                                        RenderOptions.BitmapScalingMode="HighQuality"
                                        Visibility="{Binding Media.Thumbnail, Converter={StaticResource NotNullToVisibilityConverter}}" />
                             </Grid>
@@ -307,7 +345,7 @@
                 </Grid>
 
                 <!-- 4. ESTADO NOTIFICACIÓN (Notification) -->
-                <Grid x:Name="NotificationView" Opacity="0" Visibility="Collapsed" Margin="10,0" ClipToBounds="True">
+                <Grid x:Name="NotificationView" Panel.ZIndex="20" Opacity="0" Visibility="Collapsed" Margin="10,0" ClipToBounds="True">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
@@ -372,6 +410,7 @@
 
                 <!-- 5. FEEDBACK VISUAL DE VOLUMEN (Volume Feedback) -->
                 <Border x:Name="VolumeFeedbackOverlay"
+                        Panel.ZIndex="30"
                         Background="#1A2232"
                         BorderBrush="#2A3952"
                         BorderThickness="1"
@@ -400,7 +439,7 @@
                 </Border>
 
                 <!-- 6. ESTADO ALERTA DE ENERGÍA (PowerAlert) -->
-                <Grid x:Name="PowerAlertView" Opacity="0" Visibility="Collapsed" Margin="10,0" ClipToBounds="True">
+                <Grid x:Name="PowerAlertView" Panel.ZIndex="20" Opacity="0" Visibility="Collapsed" Margin="10,0" ClipToBounds="True">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <Border Width="22" Height="22" CornerRadius="11" Background="#14281E" BorderBrush="#1E462E" BorderThickness="1" Margin="0,0,8,0">
                             <Path Data="M11 21h-1l1-7H7.5c-.88 0-.33-.75-.31-.78C8.48 10.94 10.42 7.54 13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-6 10.49z"
@@ -419,7 +458,7 @@
                 </Grid>
 
                 <!-- 7. ESTADO ALERTA BLOQ MAYÚS (CapsLockAlert) -->
-                <Grid x:Name="CapsLockAlertView" Opacity="0" Visibility="Collapsed" Margin="8,0" ClipToBounds="True">
+                <Grid x:Name="CapsLockAlertView" Panel.ZIndex="20" Opacity="0" Visibility="Collapsed" Margin="8,0" ClipToBounds="True">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <Border Width="20" Height="20" CornerRadius="5" Background="#242432" BorderBrush="#3B3B4E" BorderThickness="1" Margin="0,0,8,0">
                             <TextBlock Text="A"

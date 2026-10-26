@@ -21,6 +21,7 @@ public partial class MainWindow : Window, IDisposable
     private readonly MainViewModel _viewModel;
     private readonly FullscreenDetector _fullscreenDetector;
     private DispatcherTimer? _volumeFadeTimer;
+    private FrameworkElement? _currentTargetView;
 
     public MainWindow()
     {
@@ -254,15 +255,23 @@ public partial class MainWindow : Window, IDisposable
                 break;
         }
 
+        _currentTargetView = targetView;
+
         if (!animate || !IsLoaded)
         {
+            IslandBorder.BeginAnimation(WidthProperty, null);
+            IslandBorder.BeginAnimation(HeightProperty, null);
             IslandBorder.Width = targetWidth;
             IslandBorder.Height = targetHeight;
             IslandBorder.CornerRadius = new CornerRadius(targetRadius);
+
+            targetView.BeginAnimation(OpacityProperty, null);
             targetView.Visibility = Visibility.Visible;
             targetView.Opacity = 1;
+
             foreach (var view in viewsToHide)
             {
+                view.BeginAnimation(OpacityProperty, null);
                 view.Visibility = Visibility.Collapsed;
                 view.Opacity = 0;
             }
@@ -270,9 +279,9 @@ public partial class MainWindow : Window, IDisposable
         }
 
         var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-        var duration = TimeSpan.FromMilliseconds(320);
+        var duration = TimeSpan.FromMilliseconds(300);
 
-        // Animación de ancho y alto
+        // Animación de ancho y alto de la cápsula
         var widthAnim = new DoubleAnimation(targetWidth, duration) { EasingFunction = ease };
         IslandBorder.BeginAnimation(WidthProperty, widthAnim);
 
@@ -281,25 +290,47 @@ public partial class MainWindow : Window, IDisposable
 
         IslandBorder.CornerRadius = new CornerRadius(targetRadius);
 
-        // Desvanecer vistas previas
+        // Mostrar de inmediato la vista objetivo y asegurar transición fluida sin apagón a 0
+        targetView.Visibility = Visibility.Visible;
+        targetView.BeginAnimation(OpacityProperty, null);
+
+        var fadeIn = new DoubleAnimation(1.0, TimeSpan.FromMilliseconds(220))
+        {
+            EasingFunction = ease
+        };
+        fadeIn.Completed += (s, e) =>
+        {
+            if (_currentTargetView == targetView)
+            {
+                targetView.Opacity = 1.0;
+            }
+        };
+        targetView.BeginAnimation(OpacityProperty, fadeIn);
+
+        // Desvanecer vistas previas asegurando que no se apaguen si vuelven a ser la vista activa
         foreach (var view in viewsToHide)
         {
             if (view.Visibility == Visibility.Visible)
             {
-                var fadeOut = new DoubleAnimation(0, TimeSpan.FromMilliseconds(140));
-                fadeOut.Completed += (s, e) => { view.Visibility = Visibility.Collapsed; };
+                var fadeOut = new DoubleAnimation(0.0, TimeSpan.FromMilliseconds(120));
+                var viewCapture = view;
+                fadeOut.Completed += (s, e) =>
+                {
+                    if (viewCapture != _currentTargetView)
+                    {
+                        viewCapture.Visibility = Visibility.Collapsed;
+                        viewCapture.Opacity = 0;
+                    }
+                };
                 view.BeginAnimation(OpacityProperty, fadeOut);
             }
+            else
+            {
+                view.BeginAnimation(OpacityProperty, null);
+                view.Visibility = Visibility.Collapsed;
+                view.Opacity = 0;
+            }
         }
-
-        // Mostrar y desvanecer hacia adentro vista objetivo
-        targetView.Visibility = Visibility.Visible;
-        var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(240))
-        {
-            BeginTime = TimeSpan.FromMilliseconds(80),
-            EasingFunction = ease
-        };
-        targetView.BeginAnimation(OpacityProperty, fadeIn);
     }
 
     private void PlayNotificationPulse()
@@ -354,11 +385,30 @@ public partial class MainWindow : Window, IDisposable
 
     private void IslandBorder_MouseEnter(object sender, MouseEventArgs e)
     {
+        var pos = e.GetPosition(IslandBorder);
+        if (pos.X < 0 || pos.X > IslandBorder.ActualWidth ||
+            pos.Y < 0 || pos.Y > IslandBorder.ActualHeight)
+        {
+            return;
+        }
+
         _viewModel.SetHoveredCommand.Execute(true);
     }
 
     private void IslandBorder_MouseLeave(object sender, MouseEventArgs e)
     {
+        if (IslandBorder.IsMouseOver)
+        {
+            return;
+        }
+
+        var pos = e.GetPosition(IslandBorder);
+        if (pos.X >= 0 && pos.X <= IslandBorder.ActualWidth &&
+            pos.Y >= 0 && pos.Y <= IslandBorder.ActualHeight)
+        {
+            return;
+        }
+
         _viewModel.SetHoveredCommand.Execute(false);
     }
 

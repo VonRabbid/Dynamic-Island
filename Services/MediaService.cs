@@ -234,7 +234,15 @@ public partial class MediaService : ObservableObject
         Artist = props.Artist ?? string.Empty;
         HasMedia = !string.IsNullOrWhiteSpace(Title) || !string.IsNullOrWhiteSpace(Artist);
 
-        Thumbnail = await LoadThumbnailAsync(props.Thumbnail);
+        try
+        {
+            Thumbnail = await LoadThumbnailAsync(props.Thumbnail);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[MediaService] Error asignando miniatura: {ex.Message}");
+            Thumbnail = null;
+        }
     }
 
     public void SetSuspended(bool suspended)
@@ -260,27 +268,29 @@ public partial class MediaService : ObservableObject
             using var stream = await thumbnailRef.OpenReadAsync();
             if (stream == null || stream.Size == 0) return null;
 
-            using var reader = new DataReader(stream.GetInputStreamAt(0));
-            await reader.LoadAsync((uint)stream.Size);
-            var bytes = new byte[stream.Size];
-            reader.ReadBytes(bytes);
+            using var memoryStream = new MemoryStream();
+            using (var inputStream = stream.AsStreamForRead())
+            {
+                await inputStream.CopyToAsync(memoryStream).ConfigureAwait(false);
+            }
+
+            if (memoryStream.Length == 0) return null;
+
+            memoryStream.Position = 0;
 
             var bitmap = new BitmapImage();
-            using (var ms = new MemoryStream(bytes))
-            {
-                bitmap.BeginInit();
-                bitmap.DecodePixelWidth = 80;
-                bitmap.CreateOptions = BitmapCreateOptions.DelayCreation;
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.StreamSource = ms;
-                bitmap.EndInit();
-            }
+            bitmap.BeginInit();
+            bitmap.DecodePixelWidth = 80;
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.StreamSource = memoryStream;
+            bitmap.EndInit();
             bitmap.Freeze();
+
             return bitmap;
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[MediaService] Error cargando carátula: {ex.Message}");
+            Debug.WriteLine($"[MediaService] Error cargando o decodificando carátula: {ex.Message}");
             return null;
         }
     }

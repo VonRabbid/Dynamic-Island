@@ -194,7 +194,7 @@ public partial class MainViewModel : ObservableObject
         {
             CurrentState = IslandState.CapsLockAlert;
         }
-        else if (IsHovered || IsPinned)
+        else if ((IsHovered || IsPinned) && Media.HasMedia)
         {
             CurrentState = IslandState.Expanded;
         }
@@ -232,7 +232,10 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
-        IsPinned = !IsPinned;
+        if (Media.HasMedia)
+        {
+            IsPinned = !IsPinned;
+        }
     }
 
     [RelayCommand]
