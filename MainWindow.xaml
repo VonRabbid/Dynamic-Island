@@ -392,6 +392,55 @@
                                    VerticalAlignment="Center"/>
                     </StackPanel>
                 </Border>
+
+                <!-- 6. ESTADO ALERTA DE ENERGÍA (PowerAlert) -->
+                <Grid x:Name="PowerAlertView" Opacity="0" Visibility="Collapsed" Margin="10,0">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Border Width="22" Height="22" CornerRadius="11" Background="#14281E" BorderBrush="#1E462E" BorderThickness="1" Margin="0,0,8,0">
+                            <Path Data="M11 21h-1l1-7H7.5c-.88 0-.33-.75-.31-.78C8.48 10.94 10.42 7.54 13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-6 10.49z"
+                                  Fill="#22C55E"
+                                  Stretch="Uniform"
+                                  Width="12" Height="12"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="{Binding CurrentPowerAlert.Message}"
+                                   Foreground="#FFFFFF"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- 7. ESTADO ALERTA BLOQ MAYÚS (CapsLockAlert) -->
+                <Grid x:Name="CapsLockAlertView" Opacity="0" Visibility="Collapsed" Margin="8,0">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Border Width="20" Height="20" CornerRadius="5" Background="#242432" BorderBrush="#3B3B4E" BorderThickness="1" Margin="0,0,8,0">
+                            <TextBlock Text="A"
+                                       Foreground="#FFFFFF"
+                                       FontSize="11"
+                                       FontWeight="Bold"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock VerticalAlignment="Center"
+                                   FontSize="10.5"
+                                   FontWeight="SemiBold">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="Mayús desactivado"/>
+                                    <Setter Property="Foreground" Value="#8E8E98"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCapsLockOn}" Value="True">
+                                            <Setter Property="Text" Value="MAYÚS ACTIVADO"/>
+                                            <Setter Property="Foreground" Value="#22C55E"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </Grid>
             </Grid>
         </Border>
     </Grid>

@@ -89,9 +89,24 @@ public partial class MainWindow : Window
 
     private void CenterOnWorkArea()
     {
-        var workArea = SystemParameters.WorkArea;
-        Left = workArea.Left + (workArea.Width - Width) / 2;
-        Top = workArea.Top + 6 + SettingsService.Instance.CurrentSettings.VerticalOffset;
+        var screen = ScreenService.GetScreen(SettingsService.Instance.CurrentSettings.SelectedMonitorDeviceName);
+        var workingArea = screen.WorkingArea;
+
+        double dpiScaleX = 1.0;
+        double dpiScaleY = 1.0;
+        var source = PresentationSource.FromVisual(this);
+        if (source?.CompositionTarget != null)
+        {
+            dpiScaleX = source.CompositionTarget.TransformToDevice.M11;
+            dpiScaleY = source.CompositionTarget.TransformToDevice.M22;
+        }
+
+        double workLeft = workingArea.Left / dpiScaleX;
+        double workTop = workingArea.Top / dpiScaleY;
+        double workWidth = workingArea.Width / dpiScaleX;
+
+        Left = workLeft + (workWidth - Width) / 2;
+        Top = workTop + 6 + SettingsService.Instance.CurrentSettings.VerticalOffset;
     }
 
     private void OnFullscreenChanged(object? sender, bool isFullscreen)
@@ -165,6 +180,32 @@ public partial class MainWindow : Window
                 viewsToHide.Add(IdleView);
                 viewsToHide.Add(MusicCompactView);
                 viewsToHide.Add(ExpandedView);
+                viewsToHide.Add(PowerAlertView);
+                viewsToHide.Add(CapsLockAlertView);
+                break;
+
+            case IslandState.PowerAlert:
+                targetWidth = 240;
+                targetHeight = 38;
+                targetRadius = 19;
+                targetView = PowerAlertView;
+                viewsToHide.Add(IdleView);
+                viewsToHide.Add(MusicCompactView);
+                viewsToHide.Add(ExpandedView);
+                viewsToHide.Add(NotificationView);
+                viewsToHide.Add(CapsLockAlertView);
+                break;
+
+            case IslandState.CapsLockAlert:
+                targetWidth = 210;
+                targetHeight = 34;
+                targetRadius = 17;
+                targetView = CapsLockAlertView;
+                viewsToHide.Add(IdleView);
+                viewsToHide.Add(MusicCompactView);
+                viewsToHide.Add(ExpandedView);
+                viewsToHide.Add(NotificationView);
+                viewsToHide.Add(PowerAlertView);
                 break;
 
             case IslandState.MusicPlaying:
@@ -175,6 +216,8 @@ public partial class MainWindow : Window
                 viewsToHide.Add(IdleView);
                 viewsToHide.Add(ExpandedView);
                 viewsToHide.Add(NotificationView);
+                viewsToHide.Add(PowerAlertView);
+                viewsToHide.Add(CapsLockAlertView);
                 break;
 
             case IslandState.Expanded:
@@ -185,6 +228,8 @@ public partial class MainWindow : Window
                 viewsToHide.Add(IdleView);
                 viewsToHide.Add(MusicCompactView);
                 viewsToHide.Add(NotificationView);
+                viewsToHide.Add(PowerAlertView);
+                viewsToHide.Add(CapsLockAlertView);
                 break;
 
             case IslandState.Idle:
@@ -196,6 +241,8 @@ public partial class MainWindow : Window
                 viewsToHide.Add(MusicCompactView);
                 viewsToHide.Add(ExpandedView);
                 viewsToHide.Add(NotificationView);
+                viewsToHide.Add(PowerAlertView);
+                viewsToHide.Add(CapsLockAlertView);
                 break;
         }
 

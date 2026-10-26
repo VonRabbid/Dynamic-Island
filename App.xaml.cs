@@ -46,12 +46,16 @@ public partial class App : Application
     {
         IsShuttingDown = true;
         _trayService?.Dispose();
+        KeyboardHookService.Instance.Dispose();
+        PowerStatusService.Instance.Dispose();
         Shutdown();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
         _trayService?.Dispose();
+        KeyboardHookService.Instance.Dispose();
+        PowerStatusService.Instance.Dispose();
         base.OnExit(e);
     }
 }

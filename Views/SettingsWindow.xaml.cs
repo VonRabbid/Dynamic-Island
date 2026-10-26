@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using DynamicIsland.Models;
 using DynamicIsland.Services;
@@ -13,8 +15,36 @@ public partial class SettingsWindow : Window
     public SettingsWindow()
     {
         InitializeComponent();
+        LoadMonitors();
         LoadSettings();
         _isInitializing = false;
+    }
+
+    private void LoadMonitors()
+    {
+        var monitors = ScreenService.GetMonitors();
+        MonitorComboBox.ItemsSource = monitors;
+
+        string currentDevice = SettingsService.Instance.CurrentSettings.SelectedMonitorDeviceName;
+        int selectedIndex = 0;
+
+        for (int i = 0; i < monitors.Count; i++)
+        {
+            if (string.Equals(monitors[i].DeviceName, currentDevice, StringComparison.OrdinalIgnoreCase))
+            {
+                selectedIndex = i;
+                break;
+            }
+            if (currentDevice == "Primary" && monitors[i].IsPrimary)
+            {
+                selectedIndex = i;
+            }
+        }
+
+        if (monitors.Count > 0)
+        {
+            MonitorComboBox.SelectedIndex = selectedIndex;
+        }
     }
 
     private void LoadSettings()
@@ -31,6 +61,8 @@ public partial class SettingsWindow : Window
         ScaleValueText.Text = $"{Math.Round(settings.IslandScale * 100)}%";
 
         VolumeWheelCheckBox.IsChecked = settings.EnableMouseWheelVolume;
+        CapsLockCheckBox.IsChecked = settings.EnableCapsLockAlert;
+        PowerAlertCheckBox.IsChecked = settings.EnablePowerAlert;
     }
 
     private void Header_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -38,6 +70,17 @@ public partial class SettingsWindow : Window
         if (e.ButtonState == MouseButtonState.Pressed)
         {
             DragMove();
+        }
+    }
+
+    private void MonitorComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isInitializing) return;
+
+        if (MonitorComboBox.SelectedItem is MonitorInfo monitor)
+        {
+            SettingsService.Instance.CurrentSettings.SelectedMonitorDeviceName = monitor.DeviceName;
+            SettingsService.Instance.NotifyChanged();
         }
     }
 
@@ -82,22 +125,28 @@ public partial class SettingsWindow : Window
         SettingsService.Instance.NotifyChanged();
     }
 
-    private void VolumeWheelCheckBox_Changed(object sender, RoutedEventArgs e)
+    private void Checkboxes_Changed(object sender, RoutedEventArgs e)
     {
         if (_isInitializing) return;
 
         SettingsService.Instance.CurrentSettings.EnableMouseWheelVolume = VolumeWheelCheckBox.IsChecked == true;
+        SettingsService.Instance.CurrentSettings.EnableCapsLockAlert = CapsLockCheckBox.IsChecked == true;
+        SettingsService.Instance.CurrentSettings.EnablePowerAlert = PowerAlertCheckBox.IsChecked == true;
     }
 
     private void ResetDefaults_Click(object sender, RoutedEventArgs e)
     {
         var defaults = new AppSettings();
+        SettingsService.Instance.CurrentSettings.SelectedMonitorDeviceName = defaults.SelectedMonitorDeviceName;
         SettingsService.Instance.CurrentSettings.VerticalOffset = defaults.VerticalOffset;
         SettingsService.Instance.CurrentSettings.NotificationDuration = defaults.NotificationDuration;
         SettingsService.Instance.CurrentSettings.IslandScale = defaults.IslandScale;
         SettingsService.Instance.CurrentSettings.EnableMouseWheelVolume = defaults.EnableMouseWheelVolume;
+        SettingsService.Instance.CurrentSettings.EnableCapsLockAlert = defaults.EnableCapsLockAlert;
+        SettingsService.Instance.CurrentSettings.EnablePowerAlert = defaults.EnablePowerAlert;
 
         _isInitializing = true;
+        LoadMonitors();
         LoadSettings();
         _isInitializing = false;
 

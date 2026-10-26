@@ -14,12 +14,16 @@ public enum IslandState
     Idle,
     MusicPlaying,
     Expanded,
-    Notification
+    Notification,
+    PowerAlert,
+    CapsLockAlert
 }
 
 public partial class MainViewModel : ObservableObject
 {
     private DispatcherTimer? _notificationTimer;
+    private DispatcherTimer? _powerAlertTimer;
+    private DispatcherTimer? _capsLockTimer;
 
     [ObservableProperty]
     private IslandState _currentState = IslandState.Idle;
@@ -29,6 +33,18 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isNotificationActive;
+
+    [ObservableProperty]
+    private PowerAlertInfo? _currentPowerAlert;
+
+    [ObservableProperty]
+    private bool _isPowerAlertActive;
+
+    [ObservableProperty]
+    private bool _isCapsLockAlertActive;
+
+    [ObservableProperty]
+    private bool _isCapsLockOn;
 
     [ObservableProperty]
     private bool _isHovered;
@@ -53,6 +69,9 @@ public partial class MainViewModel : ObservableObject
         Media.PropertyChanged += OnMediaPropertyChanged;
         Notifications.OnNotificationReceived += OnNotificationReceived;
 
+        PowerStatusService.Instance.PowerAlertTriggered += OnPowerAlertTriggered;
+        KeyboardHookService.Instance.CapsLockChanged += OnCapsLockChanged;
+
         UpdateState();
     }
 
@@ -67,6 +86,55 @@ public partial class MainViewModel : ObservableObject
     private void OnNotificationReceived(object? sender, NotificationModel notification)
     {
         App.Current?.Dispatcher?.InvokeAsync(() => HandleIncomingNotification(notification));
+    }
+
+    private void OnPowerAlertTriggered(object? sender, PowerAlertInfo alert)
+    {
+        App.Current?.Dispatcher?.InvokeAsync(() =>
+        {
+            CurrentPowerAlert = alert;
+            IsPowerAlertActive = true;
+
+            _powerAlertTimer?.Stop();
+            _powerAlertTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(3)
+            };
+            _powerAlertTimer.Tick += (s, e) =>
+            {
+                _powerAlertTimer?.Stop();
+                IsPowerAlertActive = false;
+                CurrentPowerAlert = null;
+                UpdateState();
+            };
+            _powerAlertTimer.Start();
+
+            UpdateState();
+        });
+    }
+
+    private void OnCapsLockChanged(object? sender, bool isCapsLock)
+    {
+        App.Current?.Dispatcher?.InvokeAsync(() =>
+        {
+            IsCapsLockOn = isCapsLock;
+            IsCapsLockAlertActive = true;
+
+            _capsLockTimer?.Stop();
+            _capsLockTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(1500)
+            };
+            _capsLockTimer.Tick += (s, e) =>
+            {
+                _capsLockTimer?.Stop();
+                IsCapsLockAlertActive = false;
+                UpdateState();
+            };
+            _capsLockTimer.Start();
+
+            UpdateState();
+        });
     }
 
     public void HandleIncomingNotification(NotificationModel notification)
@@ -113,9 +181,18 @@ public partial class MainViewModel : ObservableObject
 
     public void UpdateState()
     {
+        // Regla de prioridad: Notificación externa > PowerAlert > CapsLockAlert > Expanded > MusicPlaying > Idle
         if (IsNotificationActive && CurrentNotification != null)
         {
             CurrentState = IslandState.Notification;
+        }
+        else if (IsPowerAlertActive && CurrentPowerAlert != null)
+        {
+            CurrentState = IslandState.PowerAlert;
+        }
+        else if (IsCapsLockAlertActive)
+        {
+            CurrentState = IslandState.CapsLockAlert;
         }
         else if (IsHovered || IsPinned)
         {
@@ -139,6 +216,22 @@ public partial class MainViewModel : ObservableObject
             DismissNotification();
             return;
         }
+        if (IsPowerAlertActive)
+        {
+            _powerAlertTimer?.Stop();
+            IsPowerAlertActive = false;
+            CurrentPowerAlert = null;
+            UpdateState();
+            return;
+        }
+        if (IsCapsLockAlertActive)
+        {
+            _capsLockTimer?.Stop();
+            IsCapsLockAlertActive = false;
+            UpdateState();
+            return;
+        }
+
         IsPinned = !IsPinned;
     }
 

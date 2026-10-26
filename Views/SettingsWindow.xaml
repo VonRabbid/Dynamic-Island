@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Ajustes - Dynamic Island"
-        Width="380" Height="450"
+        Width="390" Height="520"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -88,7 +88,7 @@
             </Grid.RowDefinitions>
 
             <!-- Header -->
-            <Grid Grid.Row="0" Margin="0,0,0,16" MouseLeftButtonDown="Header_MouseLeftButtonDown">
+            <Grid Grid.Row="0" Margin="0,0,0,14" MouseLeftButtonDown="Header_MouseLeftButtonDown">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
@@ -117,8 +117,19 @@
             <!-- Settings Content -->
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                 <StackPanel>
-                    <!-- 1. Vertical Offset -->
-                    <Grid Margin="0,0,0,16">
+                    <!-- 1. Monitor Selection -->
+                    <Grid Margin="0,0,0,14">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="Pantalla de Visualización" Foreground="#E2E2E8" FontSize="12.5" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <ComboBox Grid.Row="1" x:Name="MonitorComboBox" Height="28" Background="#242430" Foreground="#FFFFFF"
+                                  SelectionChanged="MonitorComboBox_SelectionChanged"/>
+                    </Grid>
+
+                    <!-- 2. Vertical Offset -->
+                    <Grid Margin="0,0,0,14">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
@@ -132,8 +143,8 @@
                                 ValueChanged="OffsetSlider_ValueChanged"/>
                     </Grid>
 
-                    <!-- 2. Notification Duration -->
-                    <Grid Margin="0,0,0,16">
+                    <!-- 3. Notification Duration -->
+                    <Grid Margin="0,0,0,14">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
@@ -147,8 +158,8 @@
                                 ValueChanged="DurationSlider_ValueChanged"/>
                     </Grid>
 
-                    <!-- 3. Island Scale -->
-                    <Grid Margin="0,0,0,16">
+                    <!-- 4. Island Scale -->
+                    <Grid Margin="0,0,0,14">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
@@ -162,20 +173,38 @@
                                 ValueChanged="ScaleSlider_ValueChanged"/>
                     </Grid>
 
-                    <!-- 4. Mouse Wheel Volume -->
+                    <!-- 5. Checkboxes -->
                     <CheckBox x:Name="VolumeWheelCheckBox"
                               Content="Controlar volumen con la rueda del ratón"
                               Foreground="#E2E2E8"
                               FontSize="12"
-                              Margin="0,0,0,10"
+                              Margin="0,0,0,8"
                               Cursor="Hand"
-                              Checked="VolumeWheelCheckBox_Changed"
-                              Unchecked="VolumeWheelCheckBox_Changed"/>
+                              Checked="Checkboxes_Changed"
+                              Unchecked="Checkboxes_Changed"/>
+
+                    <CheckBox x:Name="CapsLockCheckBox"
+                              Content="Mostrar alerta de Bloq Mayús (Caps Lock)"
+                              Foreground="#E2E2E8"
+                              FontSize="12"
+                              Margin="0,0,0,8"
+                              Cursor="Hand"
+                              Checked="Checkboxes_Changed"
+                              Unchecked="Checkboxes_Changed"/>
+
+                    <CheckBox x:Name="PowerAlertCheckBox"
+                              Content="Mostrar alerta de estado de cargador y batería"
+                              Foreground="#E2E2E8"
+                              FontSize="12"
+                              Margin="0,0,0,6"
+                              Cursor="Hand"
+                              Checked="Checkboxes_Changed"
+                              Unchecked="Checkboxes_Changed"/>
                 </StackPanel>
             </ScrollViewer>
 
             <!-- Footer Buttons -->
-            <Grid Grid.Row="2" Margin="0,16,0,0">
+            <Grid Grid.Row="2" Margin="0,14,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
