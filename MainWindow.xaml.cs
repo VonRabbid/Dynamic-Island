@@ -15,7 +15,6 @@ using Rectangle = System.Windows.Shapes.Rectangle;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using Point = System.Windows.Point;
 using Cursors = System.Windows.Input.Cursors;
-using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 
 namespace DynamicIsland;
 
@@ -161,15 +160,6 @@ public partial class MainWindow : Window, IDisposable
 
         BeginAnimation(LeftProperty, animLeft);
         BeginAnimation(TopProperty, animTop);
-    }
-
-    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.R && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
-        {
-            ResetToDefaultPosition();
-            e.Handled = true;
-        }
     }
 
     private void CenterOnWorkArea()

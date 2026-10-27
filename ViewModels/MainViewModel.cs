@@ -68,6 +68,12 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private Color _backgroundEndColor = Color.FromArgb(0xB8, 0x0E, 0x0E, 0x14);
 
+    [ObservableProperty]
+    private bool _isCurrentTrackFavorite;
+
+    [ObservableProperty]
+    private Brush _favoriteBrush = new SolidColorBrush(Color.FromRgb(0x7A, 0x7A, 0x88));
+
     public event EventHandler? ColorsChanged;
 
     public MediaService Media { get; }
@@ -91,8 +97,10 @@ public partial class MainViewModel : ObservableObject
 
         PowerStatusService.Instance.PowerAlertTriggered += OnPowerAlertTriggered;
         KeyboardHookService.Instance.CapsLockChanged += OnCapsLockChanged;
+        FavoritesService.Instance.FavoritesChanged += (s, e) => App.Current?.Dispatcher?.InvokeAsync(UpdateFavoriteStatus);
 
         UpdateState();
+        UpdateFavoriteStatus();
     }
 
     private void OnMediaPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -105,6 +113,11 @@ public partial class MainViewModel : ObservableObject
         if (e.PropertyName is nameof(Media.Thumbnail) or nameof(Media.HasMedia))
         {
             App.Current?.Dispatcher?.InvokeAsync(UpdateExtractedColors);
+        }
+
+        if (e.PropertyName is nameof(Media.Title) or nameof(Media.Artist) or nameof(Media.HasMedia))
+        {
+            App.Current?.Dispatcher?.InvokeAsync(UpdateFavoriteStatus);
         }
     }
 
@@ -304,5 +317,35 @@ public partial class MainViewModel : ObservableObject
     private async Task PreviousAsync()
     {
         await Media.PreviousAsync();
+    }
+
+    [RelayCommand]
+    private async Task ToggleShuffleAsync()
+    {
+        await Media.ToggleShuffleAsync();
+    }
+
+    [RelayCommand]
+    private async Task ToggleRepeatAsync()
+    {
+        await Media.ToggleRepeatAsync();
+    }
+
+    [RelayCommand]
+    private void ToggleFavorite()
+    {
+        FavoritesService.Instance.ToggleFavorite(Media.Title, Media.Artist, Media.SourceAppName);
+        UpdateFavoriteStatus();
+    }
+
+    public void UpdateFavoriteStatus()
+    {
+        bool isFav = FavoritesService.Instance.IsFavorite(Media.Title, Media.Artist);
+        IsCurrentTrackFavorite = isFav;
+        var brush = isFav
+            ? new SolidColorBrush(Color.FromRgb(0xEF, 0x44, 0x44))
+            : new SolidColorBrush(Color.FromRgb(0x7A, 0x7A, 0x88));
+        brush.Freeze();
+        FavoriteBrush = brush;
     }
 }
