@@ -10,4 +10,7 @@ public class AppSettings
     public string SelectedMonitorDeviceName { get; set; } = "Primary";
     public bool EnableCapsLockAlert { get; set; } = true;
     public bool EnablePowerAlert { get; set; } = true;
+    public bool UseCustomPosition { get; set; }
+    public double CustomPositionX { get; set; } = -1;
+    public double CustomPositionY { get; set; } = -1;
 }

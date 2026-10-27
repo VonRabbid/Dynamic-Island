@@ -13,6 +13,9 @@ using DynamicIsland.Services;
 using DynamicIsland.ViewModels;
 using Rectangle = System.Windows.Shapes.Rectangle;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
+using Point = System.Windows.Point;
+using Cursors = System.Windows.Input.Cursors;
+using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 
 namespace DynamicIsland;
 
@@ -23,6 +26,12 @@ public partial class MainWindow : Window, IDisposable
     private DispatcherTimer? _volumeFadeTimer;
     private DispatcherTimer? _collapseTimer;
     private FrameworkElement? _currentTargetView;
+    private bool _isDraggingTimeline;
+    private bool _isMouseDownOnTimeline;
+    private bool _isDragging;
+    private Point _dragStartCursorPos;
+    private double _anchorCenterX;
+    private double _anchorTop;
 
     public MainWindow()
     {
@@ -36,6 +45,7 @@ public partial class MainWindow : Window, IDisposable
 
         _viewModel.PropertyChanged += OnViewModelPropertyChanged;
         _viewModel.Media.PropertyChanged += OnMediaPropertyChanged;
+        _viewModel.ColorsChanged += OnViewModelColorsChanged;
         _viewModel.NotificationPulsed += (s, e) => Dispatcher.InvokeAsync(PlayNotificationPulse);
 
         SettingsService.Instance.SettingsChanged += OnSettingsChanged;
@@ -58,6 +68,15 @@ public partial class MainWindow : Window, IDisposable
         CenterOnWorkArea();
         ApplyScale(SettingsService.Instance.CurrentSettings.IslandScale);
         _viewModel.UpdateOpacity(SettingsService.Instance.CurrentSettings.IslandOpacity);
+        GradientStop1.Color = _viewModel.BackgroundStartColor;
+        GradientStop2.Color = _viewModel.BackgroundEndColor;
+
+        TimelineSlider.AddHandler(System.Windows.Controls.Primitives.Thumb.DragStartedEvent, new System.Windows.Controls.Primitives.DragStartedEventHandler(OnTimelineDragStarted));
+        TimelineSlider.AddHandler(System.Windows.Controls.Primitives.Thumb.DragCompletedEvent, new System.Windows.Controls.Primitives.DragCompletedEventHandler(OnTimelineDragCompleted));
+        TimelineSlider.PreviewMouseLeftButtonDown += OnTimelinePreviewMouseDown;
+        TimelineSlider.PreviewMouseLeftButtonUp += OnTimelinePreviewMouseUp;
+        TimelineSlider.ValueChanged += OnTimelineValueChanged;
+
         ApplyState(_viewModel.CurrentState, animate: false);
         UpdateEqualizerAnimation(_viewModel.Media.IsPlaying);
     }
@@ -85,15 +104,21 @@ public partial class MainWindow : Window, IDisposable
 
     public void ResetPosition()
     {
-        CenterOnWorkArea();
+        ResetToDefaultPosition();
         IslandBorder.Visibility = Visibility.Visible;
         IslandBorder.Opacity = 1;
         ApplyState(_viewModel.CurrentState, animate: true);
     }
 
-    private void CenterOnWorkArea()
+    public void ResetToDefaultPosition()
     {
-        var screen = ScreenService.GetScreen(SettingsService.Instance.CurrentSettings.SelectedMonitorDeviceName);
+        var settings = SettingsService.Instance.CurrentSettings;
+        settings.UseCustomPosition = false;
+        settings.CustomPositionX = -1;
+        settings.CustomPositionY = -1;
+        SettingsService.Instance.Save(settings);
+
+        var screen = ScreenService.GetScreen(settings.SelectedMonitorDeviceName);
         var workingArea = screen.WorkingArea;
 
         double dpiScaleX = 1.0;
@@ -109,8 +134,82 @@ public partial class MainWindow : Window, IDisposable
         double workTop = workingArea.Top / dpiScaleY;
         double workWidth = workingArea.Width / dpiScaleX;
 
-        Left = workLeft + (workWidth - Width) / 2;
-        Top = workTop + 6 + SettingsService.Instance.CurrentSettings.VerticalOffset;
+        double targetCenterX = workLeft + (workWidth / 2);
+        double targetTop = workTop + 6 + settings.VerticalOffset;
+        double winWidth = ActualWidth > 0 ? ActualWidth : Width;
+        double targetLeft = targetCenterX - (winWidth / 2);
+
+        _anchorCenterX = targetCenterX;
+        _anchorTop = targetTop;
+
+        var duration = TimeSpan.FromMilliseconds(300);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+
+        var animLeft = new DoubleAnimation(targetLeft, duration) { EasingFunction = ease };
+        var animTop = new DoubleAnimation(targetTop, duration) { EasingFunction = ease };
+
+        animLeft.Completed += (s, e) =>
+        {
+            BeginAnimation(LeftProperty, null);
+            Left = targetLeft;
+        };
+        animTop.Completed += (s, e) =>
+        {
+            BeginAnimation(TopProperty, null);
+            Top = targetTop;
+        };
+
+        BeginAnimation(LeftProperty, animLeft);
+        BeginAnimation(TopProperty, animTop);
+    }
+
+    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.R && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+        {
+            ResetToDefaultPosition();
+            e.Handled = true;
+        }
+    }
+
+    private void CenterOnWorkArea()
+    {
+        var settings = SettingsService.Instance.CurrentSettings;
+        if (settings.UseCustomPosition && settings.CustomPositionX >= 0 && settings.CustomPositionY >= 0)
+        {
+            _anchorCenterX = settings.CustomPositionX;
+            _anchorTop = settings.CustomPositionY;
+        }
+        else
+        {
+            var screen = ScreenService.GetScreen(settings.SelectedMonitorDeviceName);
+            var workingArea = screen.WorkingArea;
+
+            double dpiScaleX = 1.0;
+            double dpiScaleY = 1.0;
+            var source = PresentationSource.FromVisual(this);
+            if (source?.CompositionTarget != null)
+            {
+                dpiScaleX = source.CompositionTarget.TransformToDevice.M11;
+                dpiScaleY = source.CompositionTarget.TransformToDevice.M22;
+            }
+
+            double workLeft = workingArea.Left / dpiScaleX;
+            double workTop = workingArea.Top / dpiScaleY;
+            double workWidth = workingArea.Width / dpiScaleX;
+
+            _anchorCenterX = workLeft + (workWidth / 2);
+            _anchorTop = workTop + 6 + settings.VerticalOffset;
+        }
+
+        UpdateWindowPosition();
+    }
+
+    private void UpdateWindowPosition()
+    {
+        double winWidth = ActualWidth > 0 ? ActualWidth : Width;
+        Left = _anchorCenterX - (winWidth / 2);
+        Top = _anchorTop;
     }
 
     private void OnFullscreenChanged(object? sender, bool isFullscreen)
@@ -174,10 +273,25 @@ public partial class MainWindow : Window, IDisposable
         {
             Dispatcher.InvokeAsync(() => UpdateEqualizerAnimation(_viewModel.Media.IsPlaying));
         }
+        else if (e.PropertyName == nameof(_viewModel.Media.ProgressPercentage))
+        {
+            if (!_isDraggingTimeline && !_isMouseDownOnTimeline)
+            {
+                Dispatcher.InvokeAsync(() =>
+                {
+                    if (!_isDraggingTimeline && !_isMouseDownOnTimeline)
+                    {
+                        TimelineSlider.Value = _viewModel.Media.ProgressPercentage;
+                    }
+                });
+            }
+        }
     }
 
     private void ApplyState(IslandState state, bool animate)
     {
+        UpdateWindowPosition();
+
         double targetWidth;
         double targetHeight;
         double targetRadius;
@@ -223,9 +337,9 @@ public partial class MainWindow : Window, IDisposable
                 break;
 
             case IslandState.MusicPlaying:
-                targetWidth = 280;
-                targetHeight = 42;
-                targetRadius = 21;
+                targetWidth = 54;
+                targetHeight = 28;
+                targetRadius = 14;
                 targetView = MusicCompactView;
                 viewsToHide.Add(IdleView);
                 viewsToHide.Add(ExpandedView);
@@ -390,6 +504,9 @@ public partial class MainWindow : Window, IDisposable
 
     private void IslandBorder_MouseEnter(object sender, MouseEventArgs e)
     {
+        if (_isDragging) return;
+
+        Focus();
         _collapseTimer?.Stop();
 
         var pos = Mouse.GetPosition(IslandBorder);
@@ -402,6 +519,8 @@ public partial class MainWindow : Window, IDisposable
 
     private void IslandBorder_MouseMove(object sender, MouseEventArgs e)
     {
+        if (_isDragging) return;
+
         if (_collapseTimer != null && _collapseTimer.IsEnabled)
         {
             var pos = Mouse.GetPosition(IslandBorder);
@@ -419,6 +538,8 @@ public partial class MainWindow : Window, IDisposable
 
     private void IslandBorder_MouseLeave(object sender, MouseEventArgs e)
     {
+        if (_isDragging) return;
+
         _collapseTimer?.Stop();
         _collapseTimer = new DispatcherTimer
         {
@@ -436,6 +557,75 @@ public partial class MainWindow : Window, IDisposable
             }
         };
         _collapseTimer.Start();
+    }
+
+    private void IslandBorder_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        Focus();
+
+        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.LeftButton == MouseButtonState.Pressed)
+        {
+            _isDragging = true;
+            _dragStartCursorPos = PointToScreen(e.GetPosition(this));
+            Mouse.Capture((IInputElement)sender);
+            Mouse.OverrideCursor = Cursors.SizeAll;
+            e.Handled = true;
+        }
+    }
+
+    private void IslandBorder_PreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (_isDragging)
+        {
+            var currentCursorPos = PointToScreen(e.GetPosition(this));
+
+            double dpiScaleX = 1.0;
+            double dpiScaleY = 1.0;
+            var source = PresentationSource.FromVisual(this);
+            if (source?.CompositionTarget != null)
+            {
+                dpiScaleX = source.CompositionTarget.TransformToDevice.M11;
+                dpiScaleY = source.CompositionTarget.TransformToDevice.M22;
+            }
+
+            double deltaX = (currentCursorPos.X - _dragStartCursorPos.X) / dpiScaleX;
+            double deltaY = (currentCursorPos.Y - _dragStartCursorPos.Y) / dpiScaleY;
+
+            _anchorCenterX += deltaX;
+            _anchorTop += deltaY;
+
+            UpdateWindowPosition();
+
+            _dragStartCursorPos = currentCursorPos;
+            e.Handled = true;
+        }
+    }
+
+    private void IslandBorder_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_isDragging)
+        {
+            _isDragging = false;
+            Mouse.Capture(null);
+            Mouse.OverrideCursor = null;
+
+            var settings = SettingsService.Instance.CurrentSettings;
+            settings.UseCustomPosition = true;
+            settings.CustomPositionX = _anchorCenterX;
+            settings.CustomPositionY = _anchorTop;
+            SettingsService.Instance.Save(settings);
+
+            e.Handled = true;
+        }
+    }
+
+    private void IslandBorder_LostMouseCapture(object sender, MouseEventArgs e)
+    {
+        if (_isDragging)
+        {
+            _isDragging = false;
+            Mouse.OverrideCursor = null;
+        }
     }
 
     private void IslandBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -481,6 +671,70 @@ public partial class MainWindow : Window, IDisposable
             VolumeFeedbackOverlay.BeginAnimation(OpacityProperty, fadeOut);
         };
         _volumeFadeTimer.Start();
+    }
+
+    private void OnTimelineDragStarted(object sender, System.Windows.Controls.Primitives.DragStartedEventArgs e)
+    {
+        _isDraggingTimeline = true;
+        _viewModel.Media.IsSeeking = true;
+    }
+
+    private void OnTimelineDragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+    {
+        _isDraggingTimeline = false;
+        _ = _viewModel.Media.SeekToAsync(TimelineSlider.Value);
+    }
+
+    private void OnTimelinePreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        _isMouseDownOnTimeline = true;
+        _viewModel.Media.IsSeeking = true;
+    }
+
+    private void OnTimelinePreviewMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_isMouseDownOnTimeline)
+        {
+            _isMouseDownOnTimeline = false;
+            if (!_isDraggingTimeline)
+            {
+                _ = _viewModel.Media.SeekToAsync(TimelineSlider.Value);
+            }
+        }
+    }
+
+    private void OnTimelineValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_isDraggingTimeline || _isMouseDownOnTimeline)
+        {
+            _viewModel.Media.PreviewSeek(TimelineSlider.Value);
+        }
+    }
+
+    private void OnViewModelColorsChanged(object? sender, EventArgs e)
+    {
+        Dispatcher.InvokeAsync(() =>
+        {
+            var duration = new Duration(TimeSpan.FromMilliseconds(480));
+            var easing = new CubicEase { EasingMode = EasingMode.EaseOut };
+
+            var anim1 = new ColorAnimation
+            {
+                To = _viewModel.BackgroundStartColor,
+                Duration = duration,
+                EasingFunction = easing
+            };
+
+            var anim2 = new ColorAnimation
+            {
+                To = _viewModel.BackgroundEndColor,
+                Duration = duration,
+                EasingFunction = easing
+            };
+
+            GradientStop1.BeginAnimation(GradientStop.ColorProperty, anim1);
+            GradientStop2.BeginAnimation(GradientStop.ColorProperty, anim2);
+        });
     }
 
     private void MediaButton_Click(object sender, RoutedEventArgs e)

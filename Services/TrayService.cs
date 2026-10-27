@@ -57,7 +57,13 @@ public class TrayService : IDisposable
 
         // 4. Reiniciar posición
         var resetItem = new Forms.ToolStripMenuItem("Reiniciar posición");
-        resetItem.Click += (s, e) => OnResetPositionRequested?.Invoke();
+        resetItem.Click += (s, e) =>
+        {
+            var settings = SettingsService.Instance.CurrentSettings;
+            settings.UseCustomPosition = false;
+            SettingsService.Instance.Save(settings);
+            OnResetPositionRequested?.Invoke();
+        };
         contextMenu.Items.Add(resetItem);
 
         // 5. Salir

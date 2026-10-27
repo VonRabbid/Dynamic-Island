@@ -13,6 +13,8 @@
         Topmost="True"
         ShowInTaskbar="False"
         ResizeMode="NoResize"
+        Focusable="True"
+        PreviewKeyDown="Window_PreviewKeyDown"
         Width="460"
         Height="210"
         Left="0"
@@ -76,6 +78,76 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Modern Interactive Timeline Slider Style -->
+        <Style x:Key="TimelineSliderThumbStyle" TargetType="Thumb">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Ellipse x:Name="thumbEllipse"
+                                     Width="10" Height="10"
+                                     Fill="{Binding AccentBrush}"
+                                     Stroke="#FFFFFF"
+                                     StrokeThickness="1.5">
+                                <Ellipse.Effect>
+                                    <DropShadowEffect BlurRadius="4" ShadowDepth="0" Color="Black" Opacity="0.5"/>
+                                </Ellipse.Effect>
+                            </Ellipse>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="thumbEllipse" Property="Width" Value="12"/>
+                                <Setter TargetName="thumbEllipse" Property="Height" Value="12"/>
+                            </Trigger>
+                            <Trigger Property="IsDragging" Value="True">
+                                <Setter TargetName="thumbEllipse" Property="Width" Value="14"/>
+                                <Setter TargetName="thumbEllipse" Property="Height" Value="14"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="TimelineSliderStyle" TargetType="Slider">
+            <Setter Property="Stylus.IsPressAndHoldEnabled" Value="False"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid VerticalAlignment="Center" Height="16">
+                            <Track x:Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="{x:Static Slider.DecreaseLarge}">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Height="4" CornerRadius="2" Background="{Binding AccentBrush}" VerticalAlignment="Center"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Style="{StaticResource TimelineSliderThumbStyle}"/>
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="{x:Static Slider.IncreaseLarge}">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Height="4" CornerRadius="2" Background="#282834" VerticalAlignment="Center"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid Background="Transparent">
@@ -86,7 +158,6 @@
                 Width="130"
                 Height="32"
                 CornerRadius="16"
-                Background="{Binding IslandBackgroundBrush}"
                 BorderBrush="#33FFFFFF"
                 BorderThickness="1"
                 ClipToBounds="True"
@@ -95,7 +166,18 @@
                 MouseLeave="IslandBorder_MouseLeave"
                 MouseMove="IslandBorder_MouseMove"
                 MouseLeftButtonDown="IslandBorder_MouseLeftButtonDown"
+                PreviewMouseLeftButtonDown="IslandBorder_PreviewMouseLeftButtonDown"
+                PreviewMouseMove="IslandBorder_PreviewMouseMove"
+                PreviewMouseLeftButtonUp="IslandBorder_PreviewMouseLeftButtonUp"
+                LostMouseCapture="IslandBorder_LostMouseCapture"
                 PreviewMouseWheel="IslandBorder_PreviewMouseWheel">
+
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop x:Name="GradientStop1" Offset="0.0" Color="#3038BDF8"/>
+                    <GradientStop x:Name="GradientStop2" Offset="1.0" Color="#B80E0E14"/>
+                </LinearGradientBrush>
+            </Border.Background>
 
             <Border.Effect>
                 <DropShadowEffect BlurRadius="18" ShadowDepth="2" Direction="270" Color="Black" Opacity="0.45"/>
@@ -119,63 +201,14 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- 2. ESTADO MÚSICA COMPACTO (MusicPlaying) -->
-                <Grid x:Name="MusicCompactView" Panel.ZIndex="5" Opacity="0" Visibility="Collapsed" Margin="8,0" ClipToBounds="True">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-
-                    <!-- Album Art Thumbnail con Fallback Estilizado -->
-                    <Border Grid.Column="0" Width="26" Height="26" CornerRadius="6" ClipToBounds="True" VerticalAlignment="Center" Margin="0,0,8,0" Background="#181820">
-                        <Grid>
-                            <!-- Placeholder degradado cuando Thumbnail es null -->
-                            <Border CornerRadius="6" Visibility="{Binding Media.Thumbnail, Converter={StaticResource NullToVisibilityConverter}}">
-                                <Border.Background>
-                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                        <GradientStop Color="#22222E" Offset="0.0"/>
-                                        <GradientStop Color="#181820" Offset="1.0"/>
-                                    </LinearGradientBrush>
-                                </Border.Background>
-                                <Path Data="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
-                                      Fill="#A2A2B2"
-                                      Stretch="Uniform"
-                                      Width="12"
-                                      Height="12"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center"/>
-                            </Border>
-
-                            <!-- Miniatura real si Thumbnail está disponible -->
-                            <Image Source="{Binding Media.Thumbnail}"
-                                   Stretch="UniformToFill"
-                                   RenderOptions.BitmapScalingMode="HighQuality"
-                                   Visibility="{Binding Media.Thumbnail, Converter={StaticResource NotNullToVisibilityConverter}}" />
-                        </Grid>
-                    </Border>
-
-                    <!-- Title & Artist -->
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,6,0">
-                        <TextBlock Text="{Binding Media.Title}"
-                                   Foreground="#FFFFFF"
-                                   FontSize="11.5"
-                                   FontWeight="SemiBold"
-                                   TextTrimming="CharacterEllipsis"
-                                   MaxHeight="16" />
-                        <TextBlock Text="{Binding Media.Artist}"
-                                   Foreground="#8E8E98"
-                                   FontSize="9.5"
-                                   TextTrimming="CharacterEllipsis"
-                                   MaxHeight="14" />
-                    </StackPanel>
-
-                    <!-- Equalizer Visualizer Bars -->
-                    <StackPanel Grid.Column="2" x:Name="EqualizerContainer" Orientation="Horizontal" VerticalAlignment="Center" Height="18" Margin="4,0,2,0">
-                        <Rectangle x:Name="Bar1" Width="3" Height="4" RadiusX="1.5" RadiusY="1.5" Margin="1.5,0" Fill="#1ED760" VerticalAlignment="Bottom"/>
-                        <Rectangle x:Name="Bar2" Width="3" Height="12" RadiusX="1.5" RadiusY="1.5" Margin="1.5,0" Fill="#1ED760" VerticalAlignment="Bottom"/>
-                        <Rectangle x:Name="Bar3" Width="3" Height="7" RadiusX="1.5" RadiusY="1.5" Margin="1.5,0" Fill="#1ED760" VerticalAlignment="Bottom"/>
-                        <Rectangle x:Name="Bar4" Width="3" Height="10" RadiusX="1.5" RadiusY="1.5" Margin="1.5,0" Fill="#1ED760" VerticalAlignment="Bottom"/>
+                <!-- 2. ESTADO MÚSICA COMPACTO (MusicPlaying - Micro Píldora Ultra Minimalista) -->
+                <Grid x:Name="MusicCompactView" Panel.ZIndex="5" Opacity="0" Visibility="Collapsed" ClipToBounds="True" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <!-- Equalizer Visualizer Bars with Dynamic Accent Color -->
+                    <StackPanel x:Name="EqualizerContainer" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Height="18">
+                        <Rectangle x:Name="Bar1" Width="3" Height="4" RadiusX="1.5" RadiusY="1.5" Margin="1.5,0" Fill="{Binding AccentBrush}" VerticalAlignment="Bottom"/>
+                        <Rectangle x:Name="Bar2" Width="3" Height="12" RadiusX="1.5" RadiusY="1.5" Margin="1.5,0" Fill="{Binding AccentBrush}" VerticalAlignment="Bottom"/>
+                        <Rectangle x:Name="Bar3" Width="3" Height="7" RadiusX="1.5" RadiusY="1.5" Margin="1.5,0" Fill="{Binding AccentBrush}" VerticalAlignment="Bottom"/>
+                        <Rectangle x:Name="Bar4" Width="3" Height="10" RadiusX="1.5" RadiusY="1.5" Margin="1.5,0" Fill="{Binding AccentBrush}" VerticalAlignment="Bottom"/>
                     </StackPanel>
                 </Grid>
 
@@ -194,39 +227,59 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Album Art con Fallback Estilizado -->
-                        <Border Grid.Column="0" Width="48" Height="48" CornerRadius="10" ClipToBounds="True" Margin="0,0,12,0" Background="#181820">
-                            <Grid>
-                                <!-- Placeholder elegante cuando Thumbnail es null -->
-                                <Border CornerRadius="10" Visibility="{Binding Media.Thumbnail, Converter={StaticResource NullToVisibilityConverter}}">
-                                    <Border.Background>
-                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                            <GradientStop Color="#22222E" Offset="0.0"/>
-                                            <GradientStop Color="#181820" Offset="1.0"/>
-                                        </LinearGradientBrush>
-                                    </Border.Background>
-                                    <Grid>
-                                        <Path Data="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
-                                              Fill="#B0B0C4"
-                                              Stretch="Uniform"
-                                              Width="22"
-                                              Height="22"
-                                              HorizontalAlignment="Center"
-                                              VerticalAlignment="Center">
-                                            <Path.Effect>
-                                                <DropShadowEffect BlurRadius="8" ShadowDepth="0" Color="#38BDF8" Opacity="0.35"/>
-                                            </Path.Effect>
-                                        </Path>
-                                    </Grid>
-                                </Border>
+                        <!-- Album Art con Fallback Estilizado y Badge de Aplicación -->
+                        <Grid Grid.Column="0" Width="52" Height="50" Margin="0,0,10,0">
+                            <Border Width="48" Height="48" CornerRadius="10" ClipToBounds="True" Background="#181820" HorizontalAlignment="Left" VerticalAlignment="Top">
+                                <Grid>
+                                    <!-- Placeholder elegante cuando Thumbnail es null -->
+                                    <Border CornerRadius="10" Visibility="{Binding Media.Thumbnail, Converter={StaticResource NullToVisibilityConverter}}">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                <GradientStop Color="#22222E" Offset="0.0"/>
+                                                <GradientStop Color="#181820" Offset="1.0"/>
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                        <Grid>
+                                            <Path Data="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+                                                  Fill="#B0B0C4"
+                                                  Stretch="Uniform"
+                                                  Width="22"
+                                                  Height="22"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center">
+                                                <Path.Effect>
+                                                    <DropShadowEffect BlurRadius="8" ShadowDepth="0" Color="#38BDF8" Opacity="0.35"/>
+                                                </Path.Effect>
+                                            </Path>
+                                        </Grid>
+                                    </Border>
 
-                                <!-- Miniatura real si Thumbnail está disponible -->
-                                <Image Source="{Binding Media.Thumbnail}"
-                                       Stretch="UniformToFill"
-                                       RenderOptions.BitmapScalingMode="HighQuality"
-                                       Visibility="{Binding Media.Thumbnail, Converter={StaticResource NotNullToVisibilityConverter}}" />
-                            </Grid>
-                        </Border>
+                                    <!-- Miniatura real si Thumbnail está disponible -->
+                                    <Image Source="{Binding Media.Thumbnail}"
+                                           Stretch="UniformToFill"
+                                           RenderOptions.BitmapScalingMode="HighQuality"
+                                           Visibility="{Binding Media.Thumbnail, Converter={StaticResource NotNullToVisibilityConverter}}" />
+                                </Grid>
+                            </Border>
+
+                            <!-- Floating Source App Badge -->
+                            <Border HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                    Width="18" Height="18" CornerRadius="9"
+                                    Background="#E6101018"
+                                    BorderBrush="#33FFFFFF"
+                                    BorderThickness="1"
+                                    ToolTip="{Binding Media.SourceAppName}">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="4" ShadowDepth="1" Color="Black" Opacity="0.6"/>
+                                </Border.Effect>
+                                <Path Data="{Binding Media.SourceAppIconGeometry}"
+                                      Fill="{Binding Media.SourceAppBrush}"
+                                      Stretch="Uniform"
+                                      Width="10" Height="10"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
 
                         <!-- Titles -->
                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
@@ -243,28 +296,26 @@
                         </StackPanel>
                     </Grid>
 
-                    <!-- Media Timeline (Progress Bar & Times) -->
+                    <!-- Media Timeline (Interactive Seek Slider & Times) -->
                     <Grid Grid.Row="1" Margin="0,8,0,2">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <ProgressBar Grid.Row="0"
-                                     Value="{Binding Media.ProgressPercentage, Mode=OneWay}"
-                                     Minimum="0" Maximum="100"
-                                     Height="4"
-                                     Background="#25252E"
-                                     Foreground="#38BDF8"
-                                     BorderThickness="0"
-                                     IsHitTestVisible="False">
-                            <ProgressBar.Clip>
-                                <RectangleGeometry Rect="0,0,328,4" RadiusX="2" RadiusY="2"/>
-                            </ProgressBar.Clip>
-                        </ProgressBar>
+                        <Slider x:Name="TimelineSlider"
+                                Grid.Row="0"
+                                Style="{StaticResource TimelineSliderStyle}"
+                                IsMoveToPointEnabled="True"
+                                Minimum="0" Maximum="100"
+                                Value="{Binding Media.ProgressPercentage, Mode=OneWay}"
+                                Height="16"
+                                Margin="0,-4,0,-4"
+                                Cursor="Hand"/>
 
                         <Grid Grid.Row="1" Margin="0,3,0,0">
-                            <TextBlock HorizontalAlignment="Left"
+                            <TextBlock x:Name="PositionTextElem"
+                                       HorizontalAlignment="Left"
                                        Text="{Binding Media.PositionText}"
                                        Foreground="#7A7A88"
                                        FontSize="9.5"

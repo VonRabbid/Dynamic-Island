@@ -2,13 +2,17 @@ using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DynamicIsland.Helpers;
 using DynamicIsland.Models;
 using DynamicIsland.Services;
+using BitmapSource = System.Windows.Media.Imaging.BitmapSource;
 using Brush = System.Windows.Media.Brush;
 using Color = System.Windows.Media.Color;
+using SolidColorBrush = System.Windows.Media.SolidColorBrush;
 
 namespace DynamicIsland.ViewModels;
 
@@ -55,6 +59,17 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private Brush _islandBackgroundBrush = new SolidColorBrush(Color.FromArgb(0xB8, 0x0E, 0x0E, 0x14));
 
+    [ObservableProperty]
+    private Brush _accentBrush = new SolidColorBrush(Color.FromRgb(0x38, 0xBD, 0xF8));
+
+    [ObservableProperty]
+    private Color _backgroundStartColor = Color.FromArgb(0x35, 0x38, 0xBD, 0xF8);
+
+    [ObservableProperty]
+    private Color _backgroundEndColor = Color.FromArgb(0xB8, 0x0E, 0x0E, 0x14);
+
+    public event EventHandler? ColorsChanged;
+
     public MediaService Media { get; }
     public NotificationService Notifications { get; }
 
@@ -85,6 +100,11 @@ public partial class MainViewModel : ObservableObject
         if (e.PropertyName is nameof(Media.IsPlaying) or nameof(Media.HasMedia) or nameof(Media.Title))
         {
             App.Current?.Dispatcher?.InvokeAsync(UpdateState);
+        }
+
+        if (e.PropertyName is nameof(Media.Thumbnail) or nameof(Media.HasMedia))
+        {
+            App.Current?.Dispatcher?.InvokeAsync(UpdateExtractedColors);
         }
     }
 
@@ -242,15 +262,30 @@ public partial class MainViewModel : ObservableObject
         IsHovered = hovered;
     }
 
+    public void UpdateExtractedColors()
+    {
+        double opacity = SettingsService.Instance.CurrentSettings.IslandOpacity;
+        ExtractedColors colors;
+        if (Media.HasMedia && Media.Thumbnail is BitmapSource bmp)
+        {
+            colors = ColorExtractor.ExtractFromBitmap(bmp, opacity);
+        }
+        else
+        {
+            colors = ColorExtractor.GetDefaultColors(opacity);
+        }
+
+        AccentBrush = colors.AccentBrush;
+        BackgroundStartColor = colors.BackgroundStartColor;
+        BackgroundEndColor = colors.BackgroundEndColor;
+        IslandBackgroundBrush = colors.DynamicBackgroundBrush;
+
+        ColorsChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     public void UpdateOpacity(double opacity)
     {
-        if (double.IsNaN(opacity) || opacity < 0.40 || opacity > 1.00)
-            opacity = 0.85;
-
-        byte alpha = (byte)Math.Clamp((int)(opacity * 255.0), 100, 255);
-        var brush = new SolidColorBrush(Color.FromArgb(alpha, 0x0E, 0x0E, 0x14));
-        brush.Freeze();
-        IslandBackgroundBrush = brush;
+        UpdateExtractedColors();
     }
 
     [RelayCommand]

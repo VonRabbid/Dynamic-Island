@@ -117,8 +117,22 @@ public class SettingsService
             settings.SelectedMonitorDeviceName = "Primary";
         }
 
+        // 6. Validar coordenadas de posición personalizada
+        if (double.IsNaN(settings.CustomPositionX) || double.IsInfinity(settings.CustomPositionX))
+        {
+            settings.CustomPositionX = -1;
+            settings.UseCustomPosition = false;
+        }
+        if (double.IsNaN(settings.CustomPositionY) || double.IsInfinity(settings.CustomPositionY))
+        {
+            settings.CustomPositionY = -1;
+            settings.UseCustomPosition = false;
+        }
+
         return settings;
     }
+
+    public void SaveSettings(AppSettings? settings = null) => Save(settings);
 
     public void NotifyChanged()
     {
