@@ -53,4 +53,105 @@ public static class WindowHelper
         exStyle |= WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW;
         SetWindowLongPtr(hWnd, GWL_EXSTYLE, new IntPtr(exStyle));
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Margins
+    {
+        public int cxLeftWidth;
+        public int cxRightWidth;
+        public int cyTopHeight;
+        public int cyBottomHeight;
+    }
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmExtendFrameIntoClientArea(IntPtr hWnd, ref Margins pMarInset);
+
+    [DllImport("user32.dll")]
+    private static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct WindowCompositionAttributeData
+    {
+        public WindowCompositionAttribute Attribute;
+        public IntPtr Data;
+        public int SizeOfData;
+    }
+
+    private enum WindowCompositionAttribute
+    {
+        WCA_ACCENT_POLICY = 19
+    }
+
+    private enum AccentState
+    {
+        ACCENT_DISABLED = 0,
+        ACCENT_ENABLE_GRADIENT = 1,
+        ACCENT_ENABLE_TRANSPARENTGRADIENT = 2,
+        ACCENT_ENABLE_BLURBEHIND = 3,
+        ACCENT_ENABLE_ACRYLICBLURBEHIND = 4
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct AccentPolicy
+    {
+        public AccentState AccentState;
+        public int AccentFlags;
+        public int GradientColor;
+        public int AnimationId;
+    }
+
+    /// <summary>
+    /// Habilita el desenfoque de fondo tipo cristal / acrílico mediante las APIs de DWM de Windows.
+    /// </summary>
+    public static void EnableBlur(Window window)
+    {
+        var helper = new WindowInteropHelper(window);
+        var hWnd = helper.Handle;
+        if (hWnd == IntPtr.Zero)
+            return;
+
+        try
+        {
+            var margins = new Margins { cxLeftWidth = -1, cxRightWidth = -1, cyTopHeight = -1, cyBottomHeight = -1 };
+            _ = DwmExtendFrameIntoClientArea(hWnd, ref margins);
+
+            var accent = new AccentPolicy
+            {
+                AccentState = AccentState.ACCENT_ENABLE_ACRYLICBLURBEHIND,
+                AccentFlags = 2,
+                GradientColor = 0x01000000,
+                AnimationId = 0
+            };
+
+            int accentStructSize = Marshal.SizeOf(accent);
+            IntPtr accentPtr = Marshal.AllocHGlobal(accentStructSize);
+            try
+            {
+                Marshal.StructureToPtr(accent, accentPtr, false);
+                var data = new WindowCompositionAttributeData
+                {
+                    Attribute = WindowCompositionAttribute.WCA_ACCENT_POLICY,
+                    Data = accentPtr,
+                    SizeOfData = accentStructSize
+                };
+                int result = SetWindowCompositionAttribute(hWnd, ref data);
+                if (result == 0)
+                {
+                    accent.AccentState = AccentState.ACCENT_ENABLE_BLURBEHIND;
+                    accent.AccentFlags = 0;
+                    accent.GradientColor = 0;
+                    Marshal.StructureToPtr(accent, accentPtr, false);
+                    _ = SetWindowCompositionAttribute(hWnd, ref data);
+                }
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(accentPtr);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[WindowHelper] Error habilitando desenfoque DWM: {ex.Message}");
+        }
+    }
 }

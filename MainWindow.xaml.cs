@@ -49,6 +49,7 @@ public partial class MainWindow : Window, IDisposable
         base.OnSourceInitialized(e);
         var hWnd = new WindowInteropHelper(this).Handle;
         WindowHelper.ApplyNoActivateAndToolWindow(this);
+        WindowHelper.EnableBlur(this);
         _fullscreenDetector.SetWindowHandle(hWnd);
         _fullscreenDetector.Start();
     }
@@ -57,6 +58,7 @@ public partial class MainWindow : Window, IDisposable
     {
         CenterOnWorkArea();
         ApplyScale(SettingsService.Instance.CurrentSettings.IslandScale);
+        _viewModel.UpdateOpacity(SettingsService.Instance.CurrentSettings.IslandOpacity);
         ApplyState(_viewModel.CurrentState, animate: false);
         UpdateEqualizerAnimation(_viewModel.Media.IsPlaying);
     }
@@ -72,6 +74,7 @@ public partial class MainWindow : Window, IDisposable
         {
             CenterOnWorkArea();
             ApplyScale(settings.IslandScale);
+            _viewModel.UpdateOpacity(settings.IslandOpacity);
         });
     }
 

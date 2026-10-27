@@ -103,7 +103,15 @@ public class SettingsService
             settings.IslandScale = Math.Clamp(double.IsNaN(settings.IslandScale) ? 1.0 : settings.IslandScale, 0.5, 1.5);
         }
 
-        // 4. Sanitizar SelectedMonitorDeviceName
+        // 4. Limitar IslandOpacity entre 0.40 y 1.00 (por defecto 0.85)
+        if (double.IsNaN(settings.IslandOpacity) || double.IsInfinity(settings.IslandOpacity) || settings.IslandOpacity < 0.40 || settings.IslandOpacity > 1.00)
+        {
+            settings.IslandOpacity = (double.IsNaN(settings.IslandOpacity) || double.IsInfinity(settings.IslandOpacity))
+                ? 0.85
+                : Math.Clamp(settings.IslandOpacity, 0.40, 1.00);
+        }
+
+        // 5. Sanitizar SelectedMonitorDeviceName
         if (string.IsNullOrWhiteSpace(settings.SelectedMonitorDeviceName) || settings.SelectedMonitorDeviceName.Length > 128)
         {
             settings.SelectedMonitorDeviceName = "Primary";

@@ -79,15 +79,15 @@
     </Window.Resources>
 
     <Grid Background="{x:Null}">
-        <!-- Floating Capsule Container -->
+        <!-- Floating Capsule Container con Estilo Translúcido Tipo Cristal -->
         <Border x:Name="IslandBorder"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Top"
                 Width="130"
                 Height="32"
                 CornerRadius="16"
-                Background="#0C0C0F"
-                BorderBrush="#242429"
+                Background="{Binding IslandBackgroundBrush}"
+                BorderBrush="#2EFFFFFF"
                 BorderThickness="1"
                 ClipToBounds="True"
                 Cursor="Hand"
@@ -98,7 +98,7 @@
                 PreviewMouseWheel="IslandBorder_PreviewMouseWheel">
 
             <Border.Effect>
-                <DropShadowEffect BlurRadius="18" ShadowDepth="4" Direction="270" Color="#000000" Opacity="0.55"/>
+                <DropShadowEffect BlurRadius="18" ShadowDepth="2" Direction="270" Color="Black" Opacity="0.45"/>
             </Border.Effect>
 
             <Grid ClipToBounds="True">

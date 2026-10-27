@@ -60,6 +60,9 @@ public partial class SettingsWindow : Window
         ScaleSlider.Value = settings.IslandScale;
         ScaleValueText.Text = $"{Math.Round(settings.IslandScale * 100)}%";
 
+        OpacitySlider.Value = settings.IslandOpacity;
+        OpacityValueText.Text = $"{Math.Round(settings.IslandOpacity * 100)}%";
+
         VolumeWheelCheckBox.IsChecked = settings.EnableMouseWheelVolume;
         CapsLockCheckBox.IsChecked = settings.EnableCapsLockAlert;
         PowerAlertCheckBox.IsChecked = settings.EnablePowerAlert;
@@ -125,6 +128,20 @@ public partial class SettingsWindow : Window
         SettingsService.Instance.NotifyChanged();
     }
 
+    private void OpacitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_isInitializing) return;
+
+        double value = Math.Round(e.NewValue, 2);
+        if (OpacityValueText != null)
+        {
+            OpacityValueText.Text = $"{Math.Round(value * 100)}%";
+        }
+
+        SettingsService.Instance.CurrentSettings.IslandOpacity = value;
+        SettingsService.Instance.NotifyChanged();
+    }
+
     private void Checkboxes_Changed(object sender, RoutedEventArgs e)
     {
         if (_isInitializing) return;
@@ -141,6 +158,7 @@ public partial class SettingsWindow : Window
         SettingsService.Instance.CurrentSettings.VerticalOffset = defaults.VerticalOffset;
         SettingsService.Instance.CurrentSettings.NotificationDuration = defaults.NotificationDuration;
         SettingsService.Instance.CurrentSettings.IslandScale = defaults.IslandScale;
+        SettingsService.Instance.CurrentSettings.IslandOpacity = defaults.IslandOpacity;
         SettingsService.Instance.CurrentSettings.EnableMouseWheelVolume = defaults.EnableMouseWheelVolume;
         SettingsService.Instance.CurrentSettings.EnableCapsLockAlert = defaults.EnableCapsLockAlert;
         SettingsService.Instance.CurrentSettings.EnablePowerAlert = defaults.EnablePowerAlert;

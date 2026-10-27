@@ -1,11 +1,14 @@
 using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
+using System.Windows.Media;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DynamicIsland.Models;
 using DynamicIsland.Services;
+using Brush = System.Windows.Media.Brush;
+using Color = System.Windows.Media.Color;
 
 namespace DynamicIsland.ViewModels;
 
@@ -49,6 +52,9 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _isHovered;
 
+    [ObservableProperty]
+    private Brush _islandBackgroundBrush = new SolidColorBrush(Color.FromArgb(0xD9, 0x0D, 0x0D, 0x12));
+
     public MediaService Media { get; }
     public NotificationService Notifications { get; }
 
@@ -62,6 +68,8 @@ public partial class MainViewModel : ObservableObject
     {
         Media = mediaService;
         Notifications = notificationService;
+
+        UpdateOpacity(SettingsService.Instance.CurrentSettings.IslandOpacity);
 
         Media.PropertyChanged += OnMediaPropertyChanged;
         Notifications.OnNotificationReceived += OnNotificationReceived;
@@ -232,6 +240,17 @@ public partial class MainViewModel : ObservableObject
     private void SetHovered(bool hovered)
     {
         IsHovered = hovered;
+    }
+
+    public void UpdateOpacity(double opacity)
+    {
+        if (double.IsNaN(opacity) || opacity < 0.40 || opacity > 1.00)
+            opacity = 0.85;
+
+        byte alpha = (byte)Math.Clamp((int)(opacity * 255.0), 102, 255);
+        var brush = new SolidColorBrush(Color.FromArgb(alpha, 0x0D, 0x0D, 0x12));
+        brush.Freeze();
+        IslandBackgroundBrush = brush;
     }
 
     [RelayCommand]
