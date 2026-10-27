@@ -49,7 +49,6 @@ public partial class MainWindow : Window, IDisposable
         base.OnSourceInitialized(e);
         var hWnd = new WindowInteropHelper(this).Handle;
         WindowHelper.ApplyNoActivateAndToolWindow(this);
-        WindowHelper.EnableBlur(this);
         _fullscreenDetector.SetWindowHandle(hWnd);
         _fullscreenDetector.Start();
     }

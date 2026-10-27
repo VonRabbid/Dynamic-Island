@@ -53,7 +53,7 @@ public partial class MainViewModel : ObservableObject
     private bool _isHovered;
 
     [ObservableProperty]
-    private Brush _islandBackgroundBrush = new SolidColorBrush(Color.FromArgb(0xD9, 0x0D, 0x0D, 0x12));
+    private Brush _islandBackgroundBrush = new SolidColorBrush(Color.FromArgb(0xB8, 0x0E, 0x0E, 0x14));
 
     public MediaService Media { get; }
     public NotificationService Notifications { get; }
@@ -247,8 +247,8 @@ public partial class MainViewModel : ObservableObject
         if (double.IsNaN(opacity) || opacity < 0.40 || opacity > 1.00)
             opacity = 0.85;
 
-        byte alpha = (byte)Math.Clamp((int)(opacity * 255.0), 102, 255);
-        var brush = new SolidColorBrush(Color.FromArgb(alpha, 0x0D, 0x0D, 0x12));
+        byte alpha = (byte)Math.Clamp((int)(opacity * 255.0), 100, 255);
+        var brush = new SolidColorBrush(Color.FromArgb(alpha, 0x0E, 0x0E, 0x14));
         brush.Freeze();
         IslandBackgroundBrush = brush;
     }

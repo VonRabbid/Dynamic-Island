@@ -9,7 +9,7 @@
         Title="Dynamic Island"
         WindowStyle="None"
         AllowsTransparency="True"
-        Background="{x:Null}"
+        Background="Transparent"
         Topmost="True"
         ShowInTaskbar="False"
         ResizeMode="NoResize"
@@ -78,7 +78,7 @@
         </Style>
     </Window.Resources>
 
-    <Grid Background="{x:Null}">
+    <Grid Background="Transparent">
         <!-- Floating Capsule Container con Estilo Translúcido Tipo Cristal -->
         <Border x:Name="IslandBorder"
                 HorizontalAlignment="Center"
@@ -87,7 +87,7 @@
                 Height="32"
                 CornerRadius="16"
                 Background="{Binding IslandBackgroundBrush}"
-                BorderBrush="#2EFFFFFF"
+                BorderBrush="#33FFFFFF"
                 BorderThickness="1"
                 ClipToBounds="True"
                 Cursor="Hand"
