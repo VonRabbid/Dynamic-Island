@@ -33,7 +33,7 @@ public partial class App : Application, IDisposable
         {
             Dispatcher.InvokeAsync(() =>
             {
-                if (MainWindow is MainWindow mw)
+                if (MainWindow is Views.MainWindow mw)
                 {
                     mw.ResetPosition();
                 }
@@ -52,6 +52,7 @@ public partial class App : Application, IDisposable
         _trayService?.Dispose();
         KeyboardHookService.Instance.Dispose();
         PowerStatusService.Instance.Dispose();
+        MediaService.Instance.Dispose();
         Shutdown();
     }
 
@@ -66,6 +67,7 @@ public partial class App : Application, IDisposable
         _trayService?.Dispose();
         KeyboardHookService.Instance.Dispose();
         PowerStatusService.Instance.Dispose();
+        MediaService.Instance.Dispose();
         GC.SuppressFinalize(this);
     }
 }

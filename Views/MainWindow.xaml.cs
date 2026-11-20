@@ -11,22 +11,18 @@ using DynamicIsland.Helpers;
 using DynamicIsland.Models;
 using DynamicIsland.Services;
 using DynamicIsland.ViewModels;
-using Rectangle = System.Windows.Shapes.Rectangle;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using Point = System.Windows.Point;
 using Cursors = System.Windows.Input.Cursors;
 
-namespace DynamicIsland;
+namespace DynamicIsland.Views;
 
 public partial class MainWindow : Window, IDisposable
 {
     private readonly MainViewModel _viewModel;
     private readonly FullscreenDetector _fullscreenDetector;
-    private DispatcherTimer? _volumeFadeTimer;
     private DispatcherTimer? _collapseTimer;
     private FrameworkElement? _currentTargetView;
-    private bool _isDraggingTimeline;
-    private bool _isMouseDownOnTimeline;
     private bool _isDragging;
     private Point _dragStartCursorPos;
     private double _anchorCenterX;
@@ -43,7 +39,6 @@ public partial class MainWindow : Window, IDisposable
         _fullscreenDetector.FullscreenChanged += OnFullscreenChanged;
 
         _viewModel.PropertyChanged += OnViewModelPropertyChanged;
-        _viewModel.Media.PropertyChanged += OnMediaPropertyChanged;
         _viewModel.ColorsChanged += OnViewModelColorsChanged;
         _viewModel.NotificationPulsed += (s, e) => Dispatcher.InvokeAsync(PlayNotificationPulse);
 
@@ -70,14 +65,7 @@ public partial class MainWindow : Window, IDisposable
         GradientStop1.Color = _viewModel.BackgroundStartColor;
         GradientStop2.Color = _viewModel.BackgroundEndColor;
 
-        TimelineSlider.AddHandler(System.Windows.Controls.Primitives.Thumb.DragStartedEvent, new System.Windows.Controls.Primitives.DragStartedEventHandler(OnTimelineDragStarted));
-        TimelineSlider.AddHandler(System.Windows.Controls.Primitives.Thumb.DragCompletedEvent, new System.Windows.Controls.Primitives.DragCompletedEventHandler(OnTimelineDragCompleted));
-        TimelineSlider.PreviewMouseLeftButtonDown += OnTimelinePreviewMouseDown;
-        TimelineSlider.PreviewMouseLeftButtonUp += OnTimelinePreviewMouseUp;
-        TimelineSlider.ValueChanged += OnTimelineValueChanged;
-
         ApplyState(_viewModel.CurrentState, animate: false);
-        UpdateEqualizerAnimation(_viewModel.Media.IsPlaying);
     }
 
     private void OnDisplaySettingsChanged(object? sender, EventArgs e)
@@ -206,9 +194,10 @@ public partial class MainWindow : Window, IDisposable
     {
         Dispatcher.InvokeAsync(() =>
         {
+            _viewModel.SetFullscreen(isFullscreen);
+
             if (isFullscreen)
             {
-                _viewModel.Media.SetSuspended(true);
                 var fadeOut = new DoubleAnimation(0, TimeSpan.FromMilliseconds(200));
                 fadeOut.Completed += (s, e) =>
                 {
@@ -218,7 +207,6 @@ public partial class MainWindow : Window, IDisposable
             }
             else
             {
-                _viewModel.Media.SetSuspended(false);
                 IslandBorder.Visibility = Visibility.Visible;
                 var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250))
                 {
@@ -244,7 +232,7 @@ public partial class MainWindow : Window, IDisposable
     public void Dispose()
     {
         _collapseTimer?.Stop();
-        _volumeFadeTimer?.Stop();
+        VolumeFeedbackOverlay.Dispose();
         _fullscreenDetector.Dispose();
         GC.SuppressFinalize(this);
     }
@@ -254,27 +242,6 @@ public partial class MainWindow : Window, IDisposable
         if (e.PropertyName == nameof(MainViewModel.CurrentState))
         {
             Dispatcher.InvokeAsync(() => ApplyState(_viewModel.CurrentState, animate: true));
-        }
-    }
-
-    private void OnMediaPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(_viewModel.Media.IsPlaying))
-        {
-            Dispatcher.InvokeAsync(() => UpdateEqualizerAnimation(_viewModel.Media.IsPlaying));
-        }
-        else if (e.PropertyName == nameof(_viewModel.Media.ProgressPercentage))
-        {
-            if (!_isDraggingTimeline && !_isMouseDownOnTimeline)
-            {
-                Dispatcher.InvokeAsync(() =>
-                {
-                    if (!_isDraggingTimeline && !_isMouseDownOnTimeline)
-                    {
-                        TimelineSlider.Value = _viewModel.Media.ProgressPercentage;
-                    }
-                });
-            }
         }
     }
 
@@ -340,7 +307,7 @@ public partial class MainWindow : Window, IDisposable
 
             case IslandState.Expanded:
                 targetWidth = 360;
-                targetHeight = 148;
+                targetHeight = 158;
                 targetRadius = 26;
                 targetView = ExpandedView;
                 viewsToHide.Add(IdleView);
@@ -399,7 +366,7 @@ public partial class MainWindow : Window, IDisposable
 
         IslandBorder.CornerRadius = new CornerRadius(targetRadius);
 
-        // Mostrar de inmediato la vista objetivo y asegurar transición fluida sin apagón a 0
+        // Mostrar de inmediato la vista objetivo y asegurar transición fluida
         targetView.Visibility = Visibility.Visible;
         targetView.BeginAnimation(OpacityProperty, null);
 
@@ -416,7 +383,7 @@ public partial class MainWindow : Window, IDisposable
         };
         targetView.BeginAnimation(OpacityProperty, fadeIn);
 
-        // Desvanecer vistas previas asegurando que no se apaguen si vuelven a ser la vista activa
+        // Desvanecer vistas previas
         foreach (var view in viewsToHide)
         {
             if (view.Visibility == Visibility.Visible)
@@ -455,41 +422,6 @@ public partial class MainWindow : Window, IDisposable
         flash.KeyFrames.Add(new LinearDoubleKeyFrame(0.4, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(100))));
         flash.KeyFrames.Add(new LinearDoubleKeyFrame(1.0, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(250))));
         NotificationView.BeginAnimation(OpacityProperty, flash);
-    }
-
-    private void UpdateEqualizerAnimation(bool isPlaying)
-    {
-        if (isPlaying)
-        {
-            StartBarAnimation(Bar1, 4, 14, 450);
-            StartBarAnimation(Bar2, 8, 17, 360);
-            StartBarAnimation(Bar3, 3, 13, 410);
-            StartBarAnimation(Bar4, 6, 16, 330);
-        }
-        else
-        {
-            StopBarAnimation(Bar1, 4);
-            StopBarAnimation(Bar2, 4);
-            StopBarAnimation(Bar3, 4);
-            StopBarAnimation(Bar4, 4);
-        }
-    }
-
-    private static void StartBarAnimation(Rectangle bar, double min, double max, int durationMs)
-    {
-        var anim = new DoubleAnimation(min, max, TimeSpan.FromMilliseconds(durationMs))
-        {
-            AutoReverse = true,
-            RepeatBehavior = RepeatBehavior.Forever,
-            EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
-        };
-        bar.BeginAnimation(HeightProperty, anim);
-    }
-
-    private static void StopBarAnimation(Rectangle bar, double idleHeight)
-    {
-        var anim = new DoubleAnimation(idleHeight, TimeSpan.FromMilliseconds(200));
-        bar.BeginAnimation(HeightProperty, anim);
     }
 
     private void IslandBorder_MouseEnter(object sender, MouseEventArgs e)
@@ -639,66 +571,7 @@ public partial class MainWindow : Window, IDisposable
             VolumeHelper.VolumeDown();
         }
 
-        ShowVolumeFeedback(isUp);
-    }
-
-    private void ShowVolumeFeedback(bool isUp)
-    {
-        VolumeText.Text = isUp ? "Volumen +" : "Volumen −";
-
-        var fadeIn = new DoubleAnimation(1, TimeSpan.FromMilliseconds(100));
-        VolumeFeedbackOverlay.BeginAnimation(OpacityProperty, fadeIn);
-
-        _volumeFadeTimer?.Stop();
-        _volumeFadeTimer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromMilliseconds(1000)
-        };
-        _volumeFadeTimer.Tick += (s, e) =>
-        {
-            _volumeFadeTimer?.Stop();
-            var fadeOut = new DoubleAnimation(0, TimeSpan.FromMilliseconds(300));
-            VolumeFeedbackOverlay.BeginAnimation(OpacityProperty, fadeOut);
-        };
-        _volumeFadeTimer.Start();
-    }
-
-    private void OnTimelineDragStarted(object sender, System.Windows.Controls.Primitives.DragStartedEventArgs e)
-    {
-        _isDraggingTimeline = true;
-        _viewModel.Media.IsSeeking = true;
-    }
-
-    private void OnTimelineDragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
-    {
-        _isDraggingTimeline = false;
-        _ = _viewModel.Media.SeekToAsync(TimelineSlider.Value);
-    }
-
-    private void OnTimelinePreviewMouseDown(object sender, MouseButtonEventArgs e)
-    {
-        _isMouseDownOnTimeline = true;
-        _viewModel.Media.IsSeeking = true;
-    }
-
-    private void OnTimelinePreviewMouseUp(object sender, MouseButtonEventArgs e)
-    {
-        if (_isMouseDownOnTimeline)
-        {
-            _isMouseDownOnTimeline = false;
-            if (!_isDraggingTimeline)
-            {
-                _ = _viewModel.Media.SeekToAsync(TimelineSlider.Value);
-            }
-        }
-    }
-
-    private void OnTimelineValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-    {
-        if (_isDraggingTimeline || _isMouseDownOnTimeline)
-        {
-            _viewModel.Media.PreviewSeek(TimelineSlider.Value);
-        }
+        VolumeFeedbackOverlay.ShowFeedback(isUp);
     }
 
     private void OnViewModelColorsChanged(object? sender, EventArgs e)
@@ -725,10 +598,5 @@ public partial class MainWindow : Window, IDisposable
             GradientStop1.BeginAnimation(GradientStop.ColorProperty, anim1);
             GradientStop2.BeginAnimation(GradientStop.ColorProperty, anim2);
         });
-    }
-
-    private void MediaButton_Click(object sender, RoutedEventArgs e)
-    {
-        e.Handled = true;
     }
 }

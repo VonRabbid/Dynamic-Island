@@ -1,0 +1,405 @@
+<UserControl x:Class="DynamicIsland.Views.Controls.ExpandedPlayerControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:converters="clr-namespace:DynamicIsland.Converters"
+             mc:Ignorable="d"
+             Margin="16,10,16,12"
+             ClipToBounds="False">
+
+    <UserControl.Resources>
+        <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+        <converters:NullToVisibilityConverter x:Key="NotNullToVisibilityConverter" Invert="True" />
+        <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
+
+        <!-- Standard Button Style for Media Controls -->
+        <Style x:Key="MediaButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="btnBorder" Background="{TemplateBinding Background}" CornerRadius="17" Padding="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="btnBorder" Property="Background" Value="#25252E"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="btnBorder" Property="Background" Value="#353540"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Accent Round Play/Pause Button Style -->
+        <Style x:Key="PlayPauseButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Width" Value="36"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="playBorder" Background="{TemplateBinding Background}" Width="36" Height="36" CornerRadius="18">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="playBorder" Property="Background" Value="#E2E2E8"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="playBorder" Property="Background" Value="#C4C4CC"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Modern Interactive Timeline Slider Style -->
+        <Style x:Key="TimelineSliderThumbStyle" TargetType="Thumb">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Ellipse x:Name="thumbEllipse"
+                                     Width="10" Height="10"
+                                     Fill="{Binding AccentBrush}"
+                                     Stroke="#FFFFFF"
+                                     StrokeThickness="1.5">
+                                <Ellipse.Effect>
+                                    <DropShadowEffect BlurRadius="4" ShadowDepth="0" Color="Black" Opacity="0.5"/>
+                                </Ellipse.Effect>
+                            </Ellipse>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="thumbEllipse" Property="Width" Value="12"/>
+                                <Setter TargetName="thumbEllipse" Property="Height" Value="12"/>
+                            </Trigger>
+                            <Trigger Property="IsDragging" Value="True">
+                                <Setter TargetName="thumbEllipse" Property="Width" Value="14"/>
+                                <Setter TargetName="thumbEllipse" Property="Height" Value="14"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="TimelineSliderStyle" TargetType="Slider">
+            <Setter Property="Stylus.IsPressAndHoldEnabled" Value="False"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid VerticalAlignment="Center" Height="16">
+                            <Track x:Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="{x:Static Slider.DecreaseLarge}">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Height="4" CornerRadius="2" Background="{Binding AccentBrush}" VerticalAlignment="Center"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Style="{StaticResource TimelineSliderThumbStyle}"/>
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="{x:Static Slider.IncreaseLarge}">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Height="4" CornerRadius="2" Background="#282834" VerticalAlignment="Center"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Track Header (Large Thumbnail + Details) -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Album Art con Fallback Estilizado y Badge de Aplicación -->
+            <Grid Grid.Column="0" Width="52" Height="50" Margin="0,0,10,0">
+                <Border Width="48" Height="48" CornerRadius="10" ClipToBounds="True" Background="#181820" HorizontalAlignment="Left" VerticalAlignment="Top">
+                    <Grid>
+                        <!-- Placeholder elegante cuando Thumbnail es null -->
+                        <Border CornerRadius="10" Visibility="{Binding Media.Thumbnail, Converter={StaticResource NullToVisibilityConverter}}">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#22222E" Offset="0.0"/>
+                                    <GradientStop Color="#181820" Offset="1.0"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Grid>
+                                <Path Data="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+                                      Fill="#B0B0C4"
+                                      Stretch="Uniform"
+                                      Width="22"
+                                      Height="22"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center">
+                                    <Path.Effect>
+                                        <DropShadowEffect BlurRadius="8" ShadowDepth="0" Color="#38BDF8" Opacity="0.35"/>
+                                    </Path.Effect>
+                                </Path>
+                            </Grid>
+                        </Border>
+
+                        <!-- Miniatura real si Thumbnail está disponible -->
+                        <Image Source="{Binding Media.Thumbnail}"
+                               Stretch="UniformToFill"
+                               RenderOptions.BitmapScalingMode="HighQuality"
+                               Visibility="{Binding Media.Thumbnail, Converter={StaticResource NotNullToVisibilityConverter}}" />
+                    </Grid>
+                </Border>
+
+                <!-- Floating Source App Badge -->
+                <Border HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                        Width="18" Height="18" CornerRadius="9"
+                        Background="#E6101018"
+                        BorderBrush="#33FFFFFF"
+                        BorderThickness="1"
+                        ToolTip="{Binding Media.SourceAppName}">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="4" ShadowDepth="1" Color="Black" Opacity="0.6"/>
+                    </Border.Effect>
+                    <Path Data="{Binding Media.SourceAppIconGeometry}"
+                          Fill="{Binding Media.SourceAppBrush}"
+                          Stretch="Uniform"
+                          Width="10" Height="10"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"/>
+                </Border>
+            </Grid>
+
+            <!-- Titles -->
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Media.Title}"
+                           Foreground="#FFFFFF"
+                           FontSize="13"
+                           FontWeight="Bold"
+                           TextTrimming="CharacterEllipsis"/>
+                <TextBlock Text="{Binding Media.Artist}"
+                           Foreground="#9E9EA8"
+                           FontSize="11"
+                           Margin="0,2,0,0"
+                           TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Media Timeline (Interactive Seek Slider & Times) -->
+        <Grid Grid.Row="1" Margin="0,6,0,2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Slider x:Name="TimelineSlider"
+                    Grid.Row="0"
+                    Style="{StaticResource TimelineSliderStyle}"
+                    IsMoveToPointEnabled="True"
+                    Minimum="0" Maximum="100"
+                    Value="{Binding Media.ProgressPercentage, Mode=OneWay}"
+                    Height="16"
+                    Margin="0,-4,0,-4"
+                    Cursor="Hand"/>
+
+            <Grid Grid.Row="1" Margin="0,3,0,0">
+                <TextBlock x:Name="PositionTextElem"
+                           HorizontalAlignment="Left"
+                           Text="{Binding Media.PositionText}"
+                           Foreground="#7A7A88"
+                           FontSize="9.5"
+                           FontFamily="Segoe UI"/>
+                <TextBlock HorizontalAlignment="Right"
+                           Text="{Binding Media.DurationText}"
+                           Foreground="#7A7A88"
+                           FontSize="9.5"
+                           FontFamily="Segoe UI"/>
+            </Grid>
+        </Grid>
+
+        <!-- Controls Row (Controles multimedia principales y dedicados) -->
+        <Grid Grid.Row="2" VerticalAlignment="Center" Margin="0,4,0,2" MinHeight="40">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <!-- Shuffle Button (Solo reproductores dedicados) -->
+                <Button Style="{StaticResource MediaButtonStyle}"
+                        Command="{Binding ToggleShuffleCommand}"
+                        Click="MediaButton_Click"
+                        ToolTip="Aleatorio"
+                        Width="28" Height="28"
+                        VerticalAlignment="Center"
+                        Margin="0,0,10,0"
+                        Focusable="False"
+                        Visibility="{Binding Media.IsDedicatedMusicPlayer, Converter={StaticResource BoolToVisConverter}}">
+                    <Path Data="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"
+                          Stretch="Uniform" Width="13" Height="13">
+                        <Path.Style>
+                            <Style TargetType="Path">
+                                <Setter Property="Fill" Value="#7A7A88"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Media.IsShuffleActive}" Value="True">
+                                        <Setter Property="Fill" Value="{Binding AccentBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Path.Style>
+                    </Path>
+                </Button>
+
+                <!-- Previous Track Button -->
+                <Button Style="{StaticResource MediaButtonStyle}"
+                        Command="{Binding PreviousCommand}"
+                        Click="MediaButton_Click"
+                        ToolTip="Anterior"
+                        Focusable="False"
+                        VerticalAlignment="Center"
+                        Width="34" Height="34">
+                    <Path Data="M6 6h2v12H6zm3.5 6 8.5 6V6z"
+                          Fill="#D0D0D8" Stretch="Uniform" Width="13" Height="13"/>
+                </Button>
+
+                <!-- Play / Pause Button -->
+                <Button Style="{StaticResource PlayPauseButtonStyle}"
+                        Command="{Binding PlayPauseCommand}"
+                        Click="MediaButton_Click"
+                        ToolTip="Reproducir / Pausar"
+                        Focusable="False"
+                        Width="36" Height="36"
+                        VerticalAlignment="Center"
+                        Margin="14,0">
+                    <Grid Width="16" Height="16">
+                        <Path Data="M8 5v14l11-7z"
+                              Fill="#000000"
+                              Stretch="Uniform"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center">
+                            <Path.Style>
+                                <Style TargetType="Path">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Media.IsPlaying}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Path.Style>
+                        </Path>
+                        <Path Data="M6 19h4V5H6v14zm8-14v14h4V5h-4z"
+                              Fill="#000000"
+                              Stretch="Uniform"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center">
+                            <Path.Style>
+                                <Style TargetType="Path">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Media.IsPlaying}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Path.Style>
+                        </Path>
+                    </Grid>
+                </Button>
+
+                <!-- Next Track Button -->
+                <Button Style="{StaticResource MediaButtonStyle}"
+                        Command="{Binding NextCommand}"
+                        Click="MediaButton_Click"
+                        ToolTip="Siguiente"
+                        Focusable="False"
+                        VerticalAlignment="Center"
+                        Width="34" Height="34">
+                    <Path Data="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"
+                          Fill="#D0D0D8" Stretch="Uniform" Width="13" Height="13"/>
+                </Button>
+
+                <!-- Repeat Button (Solo reproductores dedicados) -->
+                <Button Style="{StaticResource MediaButtonStyle}"
+                        Command="{Binding ToggleRepeatCommand}"
+                        Click="MediaButton_Click"
+                        ToolTip="Repetir"
+                        Width="28" Height="28"
+                        VerticalAlignment="Center"
+                        Margin="10,0,10,0"
+                        Focusable="False"
+                        Visibility="{Binding Media.IsDedicatedMusicPlayer, Converter={StaticResource BoolToVisConverter}}">
+                    <Path Data="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"
+                          Stretch="Uniform" Width="13" Height="13">
+                        <Path.Style>
+                            <Style TargetType="Path">
+                                <Setter Property="Fill" Value="#7A7A88"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Media.IsRepeatActive}" Value="True">
+                                        <Setter Property="Fill" Value="{Binding AccentBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Path.Style>
+                    </Path>
+                </Button>
+
+                <!-- Favorite / Like Button (Solo reproductores dedicados) -->
+                <Button Style="{StaticResource MediaButtonStyle}"
+                        Command="{Binding ToggleFavoriteCommand}"
+                        Click="MediaButton_Click"
+                        ToolTip="Favorito"
+                        Width="28" Height="28"
+                        VerticalAlignment="Center"
+                        Focusable="False"
+                        Visibility="{Binding Media.IsDedicatedMusicPlayer, Converter={StaticResource BoolToVisConverter}}">
+                    <Path Stretch="Uniform" Width="13" Height="13">
+                        <Path.Style>
+                            <Style TargetType="Path">
+                                <Setter Property="Data" Value="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z"/>
+                                <Setter Property="Fill" Value="#7A7A88"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCurrentTrackFavorite}" Value="True">
+                                        <Setter Property="Data" Value="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                        <Setter Property="Fill" Value="#EF4444"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Path.Style>
+                    </Path>
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -1,0 +1,82 @@
+<Window x:Class="DynamicIsland.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:DynamicIsland.ViewModels"
+        xmlns:controls="clr-namespace:DynamicIsland.Views.Controls"
+        mc:Ignorable="d"
+        Title="Dynamic Island"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        Width="460"
+        Height="210"
+        Left="0"
+        Top="0"
+        RenderOptions.BitmapScalingMode="HighQuality"
+        RenderOptions.ClearTypeHint="Enabled"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType">
+
+    <Grid Background="Transparent">
+        <!-- Floating Capsule Container con Estilo Translúcido Tipo Cristal -->
+        <Border x:Name="IslandBorder"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Top"
+                Width="130"
+                Height="32"
+                CornerRadius="16"
+                BorderBrush="#33FFFFFF"
+                BorderThickness="1"
+                ClipToBounds="True"
+                Cursor="Hand"
+                MouseEnter="IslandBorder_MouseEnter"
+                MouseLeave="IslandBorder_MouseLeave"
+                MouseMove="IslandBorder_MouseMove"
+                MouseLeftButtonDown="IslandBorder_MouseLeftButtonDown"
+                PreviewMouseLeftButtonDown="IslandBorder_PreviewMouseLeftButtonDown"
+                PreviewMouseMove="IslandBorder_PreviewMouseMove"
+                PreviewMouseLeftButtonUp="IslandBorder_PreviewMouseLeftButtonUp"
+                LostMouseCapture="IslandBorder_LostMouseCapture"
+                PreviewMouseWheel="IslandBorder_PreviewMouseWheel">
+
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop x:Name="GradientStop1" Offset="0.0" Color="#3038BDF8"/>
+                    <GradientStop x:Name="GradientStop2" Offset="1.0" Color="#B80E0E14"/>
+                </LinearGradientBrush>
+            </Border.Background>
+
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="18" ShadowDepth="2" Direction="270" Color="Black" Opacity="0.45"/>
+            </Border.Effect>
+
+            <Grid ClipToBounds="True">
+                <!-- 1. ESTADO REPOSO (Idle) -->
+                <controls:IdleControl x:Name="IdleView" Panel.ZIndex="1" Opacity="1"/>
+
+                <!-- 2. ESTADO MÚSICA COMPACTO (MusicPlaying) -->
+                <controls:MusicCompactControl x:Name="MusicCompactView" Panel.ZIndex="5" Opacity="0" Visibility="Collapsed"/>
+
+                <!-- 3. ESTADO EXPANDIDO (Expanded) -->
+                <controls:ExpandedPlayerControl x:Name="ExpandedView" Panel.ZIndex="10" Opacity="0" Visibility="Collapsed"/>
+
+                <!-- 4. ESTADO NOTIFICACIÓN (Notification) -->
+                <controls:NotificationControl x:Name="NotificationView" Panel.ZIndex="20" Opacity="0" Visibility="Collapsed"/>
+
+                <!-- 5. FEEDBACK VISUAL DE VOLUMEN (Volume Feedback) -->
+                <controls:VolumeOverlayControl x:Name="VolumeFeedbackOverlay" Panel.ZIndex="30"/>
+
+                <!-- 6. ESTADO ALERTA DE ENERGÍA (PowerAlert) -->
+                <controls:PowerAlertControl x:Name="PowerAlertView" Panel.ZIndex="20" Opacity="0" Visibility="Collapsed"/>
+
+                <!-- 7. ESTADO ALERTA BLOQ MAYÚS (CapsLockAlert) -->
+                <controls:CapsLockAlertControl x:Name="CapsLockAlertView" Panel.ZIndex="20" Opacity="0" Visibility="Collapsed"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
