@@ -244,6 +244,15 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    [ObservableProperty]
+    private bool _isFullscreen;
+
+    public void SetFullscreen(bool isFullscreen)
+    {
+        IsFullscreen = isFullscreen;
+        Media.SetSuspended(isFullscreen);
+    }
+
     [RelayCommand]
     private void ToggleExpand()
     {

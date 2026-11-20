@@ -1,4 +1,4 @@
-# Dynamic Island - Script de Publicación para Producción
+﻿# Dynamic Island - Script de Publicación para Producción
 $ErrorActionPreference = "Stop"
 
 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
@@ -6,8 +6,13 @@ $machinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
 $dotnetRoot = [Environment]::GetEnvironmentVariable("DOTNET_ROOT", "User")
 
 $env:Path = "$userPath;$machinePath"
+if (Test-Path "$env:USERPROFILE\.dotnet") {
+    $env:Path = "$env:USERPROFILE\.dotnet;$env:Path"
+}
 if (![string]::IsNullOrEmpty($dotnetRoot)) {
     $env:DOTNET_ROOT = $dotnetRoot
+} elseif (Test-Path "$env:USERPROFILE\.dotnet") {
+    $env:DOTNET_ROOT = "$env:USERPROFILE\.dotnet"
 }
 
 Write-Host "==========================================================" -ForegroundColor Cyan

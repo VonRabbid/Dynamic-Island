@@ -1,0 +1,34 @@
+<UserControl x:Class="DynamicIsland.Views.Controls.VolumeOverlayControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             HorizontalAlignment="Center"
+             VerticalAlignment="Center"
+             IsHitTestVisible="False">
+    <Border x:Name="VolumeBorder"
+            Background="#1A2232"
+            BorderBrush="#2A3952"
+            BorderThickness="1"
+            CornerRadius="13"
+            Padding="10,4"
+            Opacity="0">
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <Path x:Name="VolumeIcon"
+                  Data="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"
+                  Fill="#38BDF8"
+                  Stretch="Uniform"
+                  Width="12"
+                  Height="12"
+                  Margin="0,0,6,0"
+                  VerticalAlignment="Center"/>
+            <TextBlock x:Name="VolumeText"
+                       Text="Volumen"
+                       Foreground="#38BDF8"
+                       FontSize="10.5"
+                       FontWeight="SemiBold"
+                       VerticalAlignment="Center"/>
+        </StackPanel>
+    </Border>
+</UserControl>
